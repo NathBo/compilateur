@@ -79,8 +79,55 @@ and uident = string
 and lident = string
 
 
+open Format
+
+let string_of_bool b =
+  if b then "true"
+  else "false"
 
 
+let print_constant fmt c = match c with
+  | Cbool b -> fprintf fmt "%s" (string_of_bool b)
+  | Cint n -> fprintf fmt "%d" n
+  | Cstring s -> fprintf fmt "%s" s
+
+let print_binop fmt b = match b with
+  | Bdivide -> fprintf fmt "/"
+  | Bequals -> fprintf fmt "=="
+  | Binf -> fprintf fmt "<"
+  | Binfeq -> fprintf fmt  "<="
+  | Bminus -> fprintf fmt "-"
+  | Bnotequals -> fprintf fmt "!="
+  | Bplus -> fprintf fmt "+"
+  | Bsup -> fprintf fmt ">"
+  | Bsupeq -> fprintf fmt ">="
+  | Btimes -> fprintf fmt "*"
+
+
+let rec print_atom fmt a = match a with
+  | Aconstant c -> fprintf fmt "%a" print_constant c
+  | Alident l -> fprintf fmt "%s" l
+  | Auident u -> fprintf fmt "%s" u
+  | Aexpr e -> fprintf fmt "%a" print_expr e
+  | _ -> failwith "pas encore implemente"
+
+and print_expr fmt e = match e with
+  | Eminus e -> fprintf fmt "-%a" print_expr e
+  | Ebinop (b,e1,e2) -> fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
+  | Elident (s,a) | Euident (s,a) -> fprintf fmt "%s = [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
+  | Eif (e1,e2,e3) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3
+  | Edo e -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
+  | Elet (b,e) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e
+  | _ -> failwith "Pas implemente"
+
+and print_bindings fmt b =
+  fprintf fmt "%s = %a" b.lident print_expr b.expr
+
+
+
+let e = Ebinop(Bplus,Elident("oui",[Aconstant (Cint 1);Aconstant (Cstring "non")]),Elident("vrai",[Aconstant (Cbool false)]))
+
+let () = printf "e = @[%a@]@." print_expr e
 
 
 
