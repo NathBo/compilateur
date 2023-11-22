@@ -8,7 +8,7 @@ and decl =
   | Dtdecl of tdecl
   | Ddata of uident * (lident list) * ((uident * (atype list)) list)
   | Dclass of uident * (lident list) * tdecl list
-  | Dinstance of instance * expr
+  | Dinstance of instance * defn list
 
 and defn =
   {lident : lident; patargs : patarg list; expr : expr}
@@ -85,7 +85,6 @@ let string_of_bool b =
   if b then "true"
   else "false"
 
-
 let print_constant fmt c = match c with
   | Cbool b -> fprintf fmt "%s" (string_of_bool b)
   | Cint n -> fprintf fmt "%d" n
@@ -103,6 +102,9 @@ let print_binop fmt b = match b with
   | Bsupeq -> fprintf fmt ">="
   | Btimes -> fprintf fmt "*"
 
+let print_ident fmt s =
+  fprintf fmt "%s" s
+
 
 let rec print_atom fmt a = match a with
   | Aconstant c -> fprintf fmt "%a" print_constant c
@@ -114,7 +116,7 @@ let rec print_atom fmt a = match a with
 and print_expr fmt e = match e with
   | Eminus e -> fprintf fmt "-%a" print_expr e
   | Ebinop (b,e1,e2) -> fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
-  | Elident (s,a) | Euident (s,a) -> fprintf fmt "%s = [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
+  | Elident (s,a) | Euident (s,a) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
   | Eif (e1,e2,e3) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3
   | Edo e -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
   | Elet (b,e) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e
@@ -122,6 +124,55 @@ and print_expr fmt e = match e with
 
 and print_bindings fmt b =
   fprintf fmt "%s = %a" b.lident print_expr b.expr
+
+and print_patarg fmt p =match p with
+  | Pconstant c -> fprintf fmt "%a" print_constant c
+  | Plident s | Puident s -> fprintf fmt "%s" s
+  | Ppattern p -> fprintf fmt "%a" print_pattern p
+
+and print_pattern fmt p = match p with
+  | Ppatarg p -> fprintf fmt "%a" print_patarg p
+  | Pmulpatarg (s,plist) -> fprintf fmt "%s(@[<hov>%a@])" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_patarg) plist
+
+and print_atype fmt a = match a with
+  | Alident s | Auident s -> fprintf fmt "%s" s
+  | Apurtype p -> failwith "plus tard"
+
+and print_ntype fmt n =
+  fprintf fmt "%s(@[<hov>%a@])" n.uident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_atype) n.atypes
+
+and print_purtype fmt p = match p with
+  | Patype a -> fprintf fmt "%a" print_atype a
+  | Pntype n -> fprintf fmt "%a" print_ntype n
+
+and print_tdecl fmt t = match t with
+  | Tforall (s,llist) -> fprintf fmt "%s :: forall @[<hov>%a@]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) llist
+  | Tarrow (nlist,plist,p) -> fprintf fmt "(@[<hov>%a@]) => @[<hov>%a@] -> %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ntype) nlist
+  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_purtype) plist print_purtype p
+
+and print_instance fmt i = match i with
+  | Intype n -> fprintf fmt "%a" print_ntype n
+  | Iarrow (n1,n2) -> fprintf fmt "%a => %a" print_ntype n1 print_ntype n2
+  | Imularrow (nlist,n) -> fprintf fmt "(@[<hov>%a@]) => %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ") print_ntype) nlist print_ntype n
+
+and print_defn fmt d =
+  fprintf fmt "%s (@[<hov>%a@]) = %a" d.lident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_patarg) d.patargs print_expr d.expr
+
+and print_ualist fmt (u,alist) =
+  fprintf fmt "%s (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_atype) alist
+
+and print_decl fmt d = match d with
+  | Ddata (u,llist,ua) -> fprintf fmt "%s (@[<hov>%a@]) = (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) llist
+  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ualist) ua
+  | Dclass (u,llist,tlist) -> fprintf fmt "%s (@[<hov>%a@]) where {@[<hov>%a@]}" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) llist
+  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_tdecl) tlist
+  | Dinstance (i,dlist) -> fprintf fmt "%a where {[<hov>%a@]}" print_instance i Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_defn) dlist
+  | Dtdecl t -> fprintf fmt "%a" print_tdecl t
+  | Ddefn d -> fprintf fmt "%a" print_defn d
+
+and print_file fmt f =
+  fprintf fmt "@[<hov>%a@]" print_decl f.decls
+
 
 
 
