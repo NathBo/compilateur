@@ -1,9 +1,9 @@
-# dune exec ./purescript_main.exe test.pp
+# dune build
 # OCAMLPARAM: unset
 # Shared cache: disabled
-# Workspace root: /home/vincent/Bureau/algo/cours/l3/compil/compilateur
-# Auto-detected concurrency: 4
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_a27e24_output
+# Workspace root: /home/nathan/compilateur
+# Auto-detected concurrency: 6
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_5feefb_output
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -20,12 +20,11 @@ $ /usr/bin/ocamlc.opt -config > /tmp/dune_a27e24_output
 #  ; ocamlmklib = Ok External "/usr/bin/ocamlmklib.opt"
 #  ; installed_env =
 #      map
-#        { "INSIDE_DUNE" :
-#            "/home/vincent/Bureau/algo/cours/l3/compil/compilateur/_build/default"
+#        { "INSIDE_DUNE" : "/home/nathan/compilateur/_build/default"
 #        ; "OCAML_COLOR" : "always"
 #        ; "OPAMCOLOR" : "always"
 #        }
-#  ; findlib_paths = [ External "/home/vincent/.opam/default/lib" ]
+#  ; findlib_paths = [ External "/home/nathan/.opam/default/lib" ]
 #  ; ocaml_config =
 #      { version = "4.13.1"
 #      ; standard_library_default = "/usr/lib/ocaml"
@@ -139,7 +138,14 @@ $ /usr/bin/ocamlc.opt -config > /tmp/dune_a27e24_output
 #      }
 #  ; instrument_with = []
 #  }
-$ (cd _build/default && /usr/bin/ocamldep.opt -modules -impl purescript_main.ml) > _build/default/.purescript_main.eobjs/purescript_main.impl.d
+$ (cd _build/default && /usr/bin/ocamllex -q -o purescript_lexer.ml purescript_lexer.mll)
+> File "purescript_lexer.mll", line 2, character 0: syntax error.
+[3]
+$ (cd _build/default && /home/nathan/.opam/default/bin/menhir --explain --dump purescript_parser.mly --base purescript_parser --infer-write-query purescript_parser__mock.ml.mock)
+> File "purescript_parser.mly", line 2, characters 0-0:
+> Error: syntax error inside a declaration.
+> Did you perhaps forget the %% that separates declarations and rules?
+[1]
 $ (cd _build/default && /usr/bin/ocamlc.opt -g -bin-annot -I .purescript_main.eobjs/byte -no-alias-deps -opaque -o .purescript_main.eobjs/byte/purescript_main.cmo -c -impl purescript_main.ml)
 > File "purescript_main.ml", line 54, characters 12-23:
 > 54 |     let p = Parser.prog Lexer.token buf in

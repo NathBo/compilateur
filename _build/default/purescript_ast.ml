@@ -1,5 +1,5 @@
 type file =
-  {imports : imports; decls : decl list}
+  {imports : imports; decls : decl}
 
 and imports = Import
 
@@ -147,7 +147,7 @@ and print_purtype fmt p = match p with
 
 and print_tdecl fmt t = match t with
   | Tforall (s,llist) -> fprintf fmt "%s :: forall @[<hov>%a@]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) llist
-  | Tarrow (nlist,plist,p) -> fprintf fmt "(@[<hov>%a@]) => (@[<hov>%a@]) -> %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ntype) nlist
+  | Tarrow (nlist,plist,p) -> fprintf fmt "(@[<hov>%a@]) => @[<hov>%a@] -> %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ntype) nlist
   Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_purtype) plist print_purtype p
 
 and print_instance fmt i = match i with
@@ -171,7 +171,7 @@ and print_decl fmt d = match d with
   | Ddefn d -> fprintf fmt "%a" print_defn d
 
 and print_file fmt f =
-  fprintf fmt "@[<hov>%a@]" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")print_decl) f.decls
+  fprintf fmt "@[<hov>%a@]" print_decl f.decls
 
 
 
@@ -181,10 +181,7 @@ let e = Ebinop(Bplus,Elident("oui",[Aconstant (Cint 1);Aconstant (Cstring "non")
 let () = printf "e = @[%a@]@." print_expr e
 
 
-let ex =
-  {imports = Import;decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]}
 
-let() = printf "e = @[%a@]@." print_file ex
 
 
 
