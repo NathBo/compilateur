@@ -22,4 +22,7 @@
 file:
 	| NEWLINE* "Module Main where" imp=list(imports) decl=nonempty_list(decl) NEWLINE* EOF
 		{imports = imp, decls = decl}
+
+imports:
+	
 ;
