@@ -79,6 +79,14 @@ and uident = string
 and lident = string
 
 
+type typ =
+  | Unit
+  | Int
+  | String
+  | Boolean
+  | Effect of typ
+
+
 let ex =
   {imports = Import;decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]}
 
