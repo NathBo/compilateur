@@ -3,7 +3,7 @@
 # Shared cache: disabled
 # Workspace root: /home/vincent/Bureau/algo/cours/l3/compil/compilateur
 # Auto-detected concurrency: 4
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_d519da_output
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_a27e24_output
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -139,3 +139,10 @@ $ /usr/bin/ocamlc.opt -config > /tmp/dune_d519da_output
 #      }
 #  ; instrument_with = []
 #  }
+$ (cd _build/default && /usr/bin/ocamldep.opt -modules -impl purescript_main.ml) > _build/default/.purescript_main.eobjs/purescript_main.impl.d
+$ (cd _build/default && /usr/bin/ocamlc.opt -g -bin-annot -I .purescript_main.eobjs/byte -no-alias-deps -opaque -o .purescript_main.eobjs/byte/purescript_main.cmo -c -impl purescript_main.ml)
+> File "purescript_main.ml", line 54, characters 12-23:
+> 54 |     let p = Parser.prog Lexer.token buf in
+>                  ^^^^^^^^^^^
+> Error: Unbound module Parser
+[2]
