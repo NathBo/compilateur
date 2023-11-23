@@ -24,5 +24,9 @@ file:
 		{imports = imp, decls = decl}
 
 imports:
+	| "import Prelude ;" NEWLINE "import Effect ;" NEWLINE "import Effect.Console ;" { [] }
+
+decl:
+	| NEWLINE { [] }
 	
 ;

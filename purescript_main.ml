@@ -17,7 +17,7 @@ let options =
   ["--parse-only", Arg.Set parse_only,
    "  Pour ne faire uniquement que la phase d'analyse syntaxique"]
 
-let usage = "usage: mini-turtle [option] file.logo"
+let usage = "usage: ......."
 
 (* localise une erreur en indiquant la ligne et la colonne *)
 let localisation pos =
@@ -33,8 +33,8 @@ let () =
   if !ifile="" then begin eprintf "Aucun fichier à compiler\n@?"; exit 1 end;
 
   (* Ce fichier doit avoir l'extension .logo *)
-  if not (Filename.check_suffix !ifile ".logo") then begin
-    eprintf "Le fichier d'entrée doit avoir l'extension .logo\n@?";
+  if not (Filename.check_suffix !ifile ".pp") then begin
+    eprintf "Le fichier d'entrée doit avoir l'extension .pp\n@?";
     Arg.usage options usage;
     exit 1
   end;
@@ -51,7 +51,7 @@ let () =
        n'est détectée.
        La fonction Lexer.token est utilisée par Parser.prog pour obtenir
        le prochain token. *)
-    let p = Parser.prog Lexer.token buf in
+    let p = Purescript_parser.prog Lexer.token buf in
     close_in f;
 
     (* On s'arrête ici si on ne veut faire que le parsing *)
