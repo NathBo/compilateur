@@ -26,7 +26,6 @@ let localisation pos =
 	eprintf "File \"%s\", line %d, characters %d-%d:\n" !ifile l (c-1) c
 
 let () =
-	Printf.printf "debut du main\n";
 	(* Parsing de la ligne de commande *)
 	Arg.parse options (set_file ifile) usage;
 

@@ -3,11 +3,7 @@
 %}
 
 
-%token PLUS
 %token NEWLINE MODULE IMPORT EOF
-
-%left T_PLUS
-
 
 
 %start file
@@ -18,6 +14,9 @@
 
 
 file:
-	| MODULE
-		{ {imports = Import; decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]} }
+	| MODULE NEWLINE+ IMPORT NEWLINE d=list(decl) EOF
+		{ Printf.printf "%d\n" (List.length d); {imports = Import; decls = d} }
+;
+decl:
+	| NEWLINE { Printf.printf "add decl\n" ; Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))]) }
 ;
