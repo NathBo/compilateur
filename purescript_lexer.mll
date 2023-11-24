@@ -1,6 +1,6 @@
 {
 	open Lexing
-	open Parser
+	open Purescript_parser
 
 	(* exception à lever pour signaler une erreur lexicale *)
 	exception Lexing_error of string
@@ -13,9 +13,21 @@ let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
 
 
-rule scan = parse
-	| "Module"  { [T_Module] }
-	| _ { assert false (* À COMPLÉTER *) }
+rule next_token = parse
+	| "module Main where"  { [MODULE] }
+	| "import Prelude" { [IMPORT] }
+	| _ { [] }
 
 
+{
+
+  let next_token =
+    let tokens = Queue.create () in (* prochains lexèmes à renvoyer *)
+    fun lb ->
+      if Queue.is_empty tokens then begin
+	let l = next_token lb in
+	List.iter (fun t -> Printf.printf "lance\n" ; Queue.add t tokens) l
+      end;
+      Queue.pop tokens
+}
 

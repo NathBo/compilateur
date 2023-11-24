@@ -175,7 +175,7 @@ and print_file fmt f =
 
 
 
-
+(*
 let e = Ebinop(Bplus,Elident("oui",[Aconstant (Cint 1);Aconstant (Cstring "non")]),Elident("vrai",[Aconstant (Cbool false)]))
 
 let () = printf "e = @[%a@]@." print_expr e
@@ -185,7 +185,7 @@ let ex =
   {imports = Import;decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]}
 
 let() = printf "e = @[%a@]@." print_file ex
-
+*)
 
 
 

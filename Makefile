@@ -8,7 +8,7 @@ miniturtle.exe:
 	dune build purescript_main.exe
 
 explain:
-	menhir --base /tmp/parser --dump --explain purescript_parseur.mly
+	menhir --base /tmp/parser --dump --explain purescript_parser.mly
 	cat /tmp/purescript_parser.conflicts
 
 clean:
