@@ -26,7 +26,7 @@ rule next_token = parse
     fun lb ->
       if Queue.is_empty tokens then begin
 	let l = next_token lb in
-	List.iter (fun t -> Printf.printf "lance\n" ; Queue.add t tokens) l
+	List.iter (fun t -> Queue.add t tokens) l
       end;
       Queue.pop tokens
 }
