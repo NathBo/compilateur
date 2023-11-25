@@ -2,7 +2,7 @@ all: purescript_main.exe
 	dune exec ./purescript_main.exe test.purs
 
 tests: purescript_main.exe
-	for f in tests/*.logo; do dune exec ./purescript_main.exe $$f; done
+	./run-tests.sh -all ./purescript_main.exe
 
 miniturtle.exe:
 	dune build purescript_main.exe
