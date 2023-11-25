@@ -6,22 +6,6 @@
 
 	let stack = Stack.create ()
 	let () = Stack.push 0 stack
-	let rec unindent n = 
-		if Stack.is_empty stack || Stack.top stack < n then 
-    		raise (Lexing_error "bad indentation")
-		else if Stack.top stack = n then []
-		else begin
-			ignore (Stack.pop stack) ;
-			RIGHT_BLOCK :: (unindent n)
-		end
-	
-
-	let update_stack n =
-		if not (Stack.is_empty stack) && (Stack.top stack < n) then begin
-			Stack.push n stack ;
-			[]
-		end else
-			MIDLE_BLOCK :: (unindent n)
 
 	let close n mode =
 		if mode then begin
@@ -77,9 +61,12 @@ rule next_tokens = parse
 	| "then" {[THEN, curCol lexbuf -4]}
 	| "else" {[ELSE, curCol lexbuf -4]}
 	| "do" { [DO, curCol lexbuf -2] }
+	| "let" { [LET, curCol lexbuf -3] }
+	| "in" { [IN, curCol lexbuf -2] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
+	| uident as uid { [UIDENT uid, curCol lexbuf - String.length uid] }
 	| _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
 
 and string = parse
@@ -129,13 +116,24 @@ and string_ignore = parse
 								addQueue (close c' mode); 
 								Stack.push c' stack;
 								add (t',c') false
+					| LET ->	addQueue (close c mode) ;
+								Stack.push c stack;
+								addQueue [LET;LEFT_BLOCK] ;
+								let (t',c') = next_token_pair lb in
+								addQueue (close c' mode); 
+								Stack.push c' stack;
+								add (t',c') false
+					| IN ->	failwith "todo"
+
+
+
 					| EOF -> addQueue (close_without_midle c mode) ; Queue.add t tokens
 					| _ -> addQueue (close c mode) ; Queue.add t tokens
 				end in
 				add nxtT true
 			end;
 
-(*			Printf.printf "etat de la queue :\n   ";
+			Printf.printf "etat de la queue :\n   ";
 			Queue.iter (fun x -> match x with
 				| MODULE -> Printf.printf "MODULE ; "
 				| IMPORT -> Printf.printf "IMPORT ; "
@@ -152,8 +150,10 @@ and string_ignore = parse
 				| MIDLE_BLOCK -> Printf.printf "__;__ ; "
 				| DO -> Printf.printf "DO ; "
 				| STRING a -> Printf.printf "string : %s ; " a
+				| IN -> Printf.printf "in ; "
+				| LET -> Printf.printf "let ; "
 				| _ -> failwith "erreur affichage des leexems"
-			) tokens; Printf.printf "\n"; *)
+			) tokens; Printf.printf "\n"; 
 			Queue.pop tokens
 }
 
