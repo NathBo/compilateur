@@ -16,12 +16,11 @@
 
 
 file:
-	| MODULE NEWLINE+ IMPORT NEWLINE d=list(decl) EOF
+	| MODULE NEWLINE+ IMPORT NEWLINE+ d=list(decl) EOF
 		{ Printf.printf "%d\n" (List.length d); {imports = Import; decls = d} }
 ;
 decl:
-	| d=defn {Ddefn d}
-	| NEWLINE {	Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))]) }
+	| d=defn NEWLINE+ {Ddefn d}
 ;
 defn:
 	| lid=LIDENT EQUAL e=expr { {lident = lid; patargs = []; expr=e } }

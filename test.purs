@@ -1,10 +1,13 @@
 module Main where
-
 import Prelude
 import Effect
 import Effect.Console
 
-abc	  =        18
--- ca na aucun sens
+x' = 42
+a = 1
 
-de=	4
+b =  2 
+
+
+
+c=3
