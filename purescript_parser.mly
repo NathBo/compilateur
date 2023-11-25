@@ -3,13 +3,13 @@
 %}
 
 
-%token EOF T_Module T_case T_class T_data T_do T_else T_false T_forall T_if T_import T_in T_instance T_let T_module T_of T_then T_true T_where
-%token <Purescript_ast.constant> T_cst
-%token T_Plus
-%token NEWLINE
+%token NEWLINE MODULE IMPORT EOF EQUAL
+%token MINUS PLUS TIMES DIVIDE
+%token <Purescript_ast.lident> LIDENT
+%token <Purescript_ast.constant> CONSTANT
 
-%left T_Plus
-
+%left MINUS PLUS
+%left DIVIDE TIMES
 
 
 %start file
@@ -20,9 +20,26 @@
 
 
 file:
-	| NEWLINE* "Module Main where" imp=list(imports) decl=nonempty_list(decl) NEWLINE* EOF
-		{imports = imp, decls = decl}
-
-imports:
-	
+	| MODULE NEWLINE+ IMPORT NEWLINE+ d=list(decl) EOF
+		{ Printf.printf "%d\n" (List.length d); {imports = Import; decls = d} }
+;
+decl:
+	| d=defn NEWLINE+ {Ddefn d}
+;
+defn:
+	| lid=LIDENT EQUAL e=expr { {lident = lid; patargs = []; expr=e } }
+;
+expr:
+	| a=atom { Eatom a }
+	| MINUS e=expr { Eminus e }
+	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
+;
+atom :
+	| c=CONSTANT { Aconstant c }
+;
+%inline binop:
+	| MINUS { Bminus }
+	| PLUS { Bplus }
+	| TIMES { Btimes }
+	| DIVIDE { Bdivide }
 ;

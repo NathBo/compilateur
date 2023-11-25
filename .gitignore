@@ -1,1 +1,8 @@
 _build/*
+*.swp
+*.sw
+*~
+*.mli
+*.cmx
+*.cmi
+*.o
