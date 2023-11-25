@@ -90,10 +90,10 @@ and string = parse
 	| "\\\""
 		{ Buffer.add_char string_buffer '"'; string lexbuf }
 	| "\\" {string_ignore lexbuf}
+	| eof | "\n"
+		{ raise (Lexing_error "unterminated string") }
 	| _ as c
 		{ Buffer.add_char string_buffer c; string lexbuf }
-	| eof
-		{ raise (Lexing_error "unterminated string") }
 and string_ignore = parse
 	| "\\" {string lexbuf}
 	| _ {string_ignore lexbuf}

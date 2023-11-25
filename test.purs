@@ -3,5 +3,5 @@ import Prelude
 import Effect
 import Effect.Console
 
-main = log "hello \  
-  \world"
+main = log "hello
+world"
