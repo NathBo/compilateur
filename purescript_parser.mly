@@ -3,7 +3,9 @@
 %}
 
 
-%token NEWLINE MODULE IMPORT EOF
+%token NEWLINE MODULE IMPORT EOF EQUAL
+%token <Purescript_ast.lident> LIDENT
+%token <Purescript_ast.constant> CONSTANT
 
 
 %start file
@@ -18,5 +20,15 @@ file:
 		{ Printf.printf "%d\n" (List.length d); {imports = Import; decls = d} }
 ;
 decl:
-	| NEWLINE { Printf.printf "add decl\n" ; Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))]) }
+	| d=defn {Ddefn d}
+	| NEWLINE {	Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))]) }
+;
+defn:
+	| lid=LIDENT EQUAL e=expr { {lident = lid; patargs = []; expr=e } }
+;
+expr:
+	| a=atom { Eatom a }
+;
+atom :
+	| c=CONSTANT { Aconstant c }
 ;

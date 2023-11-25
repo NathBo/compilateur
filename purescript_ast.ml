@@ -57,6 +57,7 @@ and atom =
   | Aexprtype of expr * purtype
 
 and expr =
+  | Eatom of atom
   | Eminus of expr
   | Ebinop of binop * expr * expr
   | Elident of lident * atom list   (*j'ai separe les 2 cas*)
@@ -120,6 +121,7 @@ and print_expr fmt e = match e with
   | Eif (e1,e2,e3) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3
   | Edo e -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
   | Elet (b,e) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e
+  | Eatom a -> print_atom fmt a (* TODO : a modifier j'ai rajouté ça vite fait sans bien comprendre la syntaxe *)
   | _ -> failwith "Pas implemente"
 
 and print_bindings fmt b =

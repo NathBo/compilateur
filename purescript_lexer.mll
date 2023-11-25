@@ -9,8 +9,14 @@
 		 à chaque retour chariot (caractère '\n') *)
 }
 
-let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
+let upper = ['A'-'Z']
+let lower = ['a'-'z']
+let other = lower | upper | digit | '\''
+let lident = lower (other *)
+let uident = upper (other | '.')*
+let integer = ['1'-'9'] digit*
+
 
 
 rule next_tokens = parse
@@ -18,6 +24,9 @@ rule next_tokens = parse
 	| "module Main where"  { Printf.printf "read module\n"; [MODULE] }
 	| "import Prelude\nimport Effect\nimport Effect.Console" {Printf.printf "read import\n"; [IMPORT] }
 	| eof {	Printf.printf "fin\n"; [EOF] }
+	| '=' {[EQUAL]}
+	| integer as nb { [CONSTANT (Purescript_ast.Cint (int_of_string nb))] }
+	| lident as lid { Printf.printf "read lindent : %s" lid; [LIDENT lid] }
 	| _ {	Printf.printf "non reconnu\n"; [] }
 
 
@@ -30,12 +39,14 @@ rule next_tokens = parse
 					let l = next_tokens lb in
 					List.iter (fun t -> Queue.add t tokens) l
 				end;
-		Printf.printf "print\n";
 		Queue.iter (fun x -> match x with
 			| MODULE -> Printf.printf "MODULE ; "
 			| IMPORT -> Printf.printf "IMPORT ; "
 			| EOF -> Printf.printf "EOF ; "
 			| NEWLINE -> Printf.printf "NEWLINE ; "
+			| LIDENT l -> Printf.printf "LIDENT %s ; " l
+			| EQUAL -> Printf.printf "= ; "
+			| CONSTANT _ -> Printf.printf "constante ; "
 		) tokens; Printf.printf "\n";
 		Queue.pop tokens
 }
