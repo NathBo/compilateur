@@ -7,6 +7,7 @@
 %token MINUS PLUS TIMES DIVIDE
 %token IF THEN ELSE DO
 %token <Purescript_ast.lident> LIDENT
+%token <string> STRING
 %token <int> CONST_INT
 
 %left MINUS PLUS
@@ -34,6 +35,7 @@ expr:
 	| a=atom { Eatom a }
 	| MINUS e=expr { Eminus e }
 	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
+	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
 	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
 ;
 atom :
@@ -44,6 +46,7 @@ constant:
 	| i=CONST_INT {Cint i}
 	| TRUE {Cbool true}
 	| FALSE {Cbool false}
+	| s=STRING {Cstring s}
 %inline binop:
 	| MINUS { Bminus }
 	| PLUS { Bplus }

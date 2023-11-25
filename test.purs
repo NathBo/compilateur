@@ -3,7 +3,7 @@ import Prelude
 import Effect
 import Effect.Console
 
-main = do do true
-             false
-          true
 
+main = do log "a"
+          do log "b"
+             log "c"

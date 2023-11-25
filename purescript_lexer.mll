@@ -42,6 +42,7 @@
 	
 
 	let curCol l =  (l.lex_curr_p.pos_cnum - l.lex_curr_p.pos_bol)
+	let string_buffer = Buffer.create 1024
 }
 
 let digit = ['0'-'9']
@@ -76,10 +77,22 @@ rule next_tokens = parse
 	| "then" {[THEN, curCol lexbuf -4]}
 	| "else" {[ELSE, curCol lexbuf -4]}
 	| "do" { [DO, curCol lexbuf -2] }
+	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
 	| _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
 
+and string = parse
+  | '"'
+      { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
+  | "\\n"
+      { Buffer.add_char string_buffer '\n'; string lexbuf }
+  | "\\\""
+      { Buffer.add_char string_buffer '"'; string lexbuf }
+  | _ as c
+      { Buffer.add_char string_buffer c; string lexbuf }
+  | eof
+      { raise (Lexing_error "unterminated string") }
 
 {
 
@@ -131,8 +144,8 @@ rule next_tokens = parse
 				| RIGHT_BLOCK -> Printf.printf "__}__ ; "
 				| MIDLE_BLOCK -> Printf.printf "__;__ ; "
 				| DO -> Printf.printf "DO ; "
+				| STRING a -> Printf.printf "string : %s ; " a
 				| _ -> failwith "erreur affichage des leexems"
-
 			) tokens; Printf.printf "\n"; *)
 			Queue.pop tokens
 }
