@@ -85,6 +85,16 @@ type typ =
   | String
   | Boolean
   | Effect of typ
+  | Function of typ*typ
+
+
+
+
+module Smap = Map.Make(String)
+
+type env = typ Smap.t
+
+
 
 
 let ex =

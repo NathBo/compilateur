@@ -14,8 +14,7 @@ and defn =
   {lident : lident; patargs : patarg list; expr : expr}
 
 and tdecl =
-  | Tforall of lident * lident list
-  | Tarrow of ntype list * purtype list * purtype
+  {dlident : lident; lidentlist : lident list; ntypelist : ntype list; purtypelist : purtype list; purtype : purtype}
 
 and ntype =
   {uident : uident; atypes : atype list}
@@ -145,10 +144,10 @@ and print_purtype fmt p = match p with
   | Patype a -> fprintf fmt "%a" print_atype a
   | Pntype n -> fprintf fmt "%a" print_ntype n
 
-and print_tdecl fmt t = match t with
-  | Tforall (s,llist) -> fprintf fmt "%s :: forall @[<hov>%a@]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) llist
-  | Tarrow (nlist,plist,p) -> fprintf fmt "(@[<hov>%a@]) => (@[<hov>%a@]) -> %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ntype) nlist
-  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_purtype) plist print_purtype p
+and print_tdecl fmt t =
+  fprintf fmt "%s :: forall @[<hov>%a@] (@[<hov>%a@]) => (@[<hov>%a@]) -> %a" t.dlident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ident) t.lidentlist
+  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_ntype) t.ntypelist
+  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_purtype) t.purtypelist print_purtype t.purtype
 
 and print_instance fmt i = match i with
   | Intype n -> fprintf fmt "%a" print_ntype n
@@ -182,7 +181,7 @@ let () = printf "e = @[%a@]@." print_expr e
 
 
 let ex =
-  {imports = Import;decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]}
+  {imports = Import;decls = [Dclass("C",[],[{dlident = "foo"; lidentlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
 
 let() = printf "e = @[%a@]@." print_file ex
 
