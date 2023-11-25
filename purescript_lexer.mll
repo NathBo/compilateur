@@ -83,16 +83,23 @@ rule next_tokens = parse
 	| _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
 
 and string = parse
-  | '"'
-      { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
-  | "\\n"
-      { Buffer.add_char string_buffer '\n'; string lexbuf }
-  | "\\\""
-      { Buffer.add_char string_buffer '"'; string lexbuf }
-  | _ as c
-      { Buffer.add_char string_buffer c; string lexbuf }
-  | eof
-      { raise (Lexing_error "unterminated string") }
+	| '"'
+		{ let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
+	| "\\n"
+		{ Buffer.add_char string_buffer '\n'; string lexbuf }
+	| "\\\""
+		{ Buffer.add_char string_buffer '"'; string lexbuf }
+	| "\\" {string_ignore lexbuf}
+	| _ as c
+		{ Buffer.add_char string_buffer c; string lexbuf }
+	| eof
+		{ raise (Lexing_error "unterminated string") }
+and string_ignore = parse
+	| "\\" {string lexbuf}
+	| _ {string_ignore lexbuf}
+	| eof
+		{ raise (Lexing_error "unterminated string") }
+
 
 {
 
