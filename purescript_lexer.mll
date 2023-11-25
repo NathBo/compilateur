@@ -17,17 +17,23 @@ let lident = lower (other *)
 let uident = upper (other | '.')*
 let integer = ['1'-'9'] digit*
 
+let commentInline = "--" [^'\n']*
+let space = ' ' | '\t'
+
 
 
 rule next_tokens = parse
 	| "\n"    { Printf.printf "newLine\n"; new_line lexbuf; [NEWLINE] }
+	| commentInline | space  { next_tokens lexbuf }
 	| "module Main where"  { Printf.printf "read module\n"; [MODULE] }
 	| "import Prelude\nimport Effect\nimport Effect.Console" {Printf.printf "read import\n"; [IMPORT] }
 	| eof {	Printf.printf "fin\n"; [EOF] }
 	| '=' {[EQUAL]}
 	| integer as nb { [CONSTANT (Purescript_ast.Cint (int_of_string nb))] }
 	| lident as lid { Printf.printf "read lindent : %s" lid; [LIDENT lid] }
-	| _ {	Printf.printf "non reconnu\n"; [] }
+	| _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
+
+
 
 
 {

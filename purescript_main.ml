@@ -33,8 +33,8 @@ let () =
 	if !ifile="" then begin eprintf "Aucun fichier à compiler\n@?"; exit 1 end;
 
 	(* Ce fichier doit avoir l'extension .logo *)
-	if not (Filename.check_suffix !ifile ".pp") then begin
-		eprintf "Le fichier d'entrée doit avoir l'extension .pp\n@?";
+	if not (Filename.check_suffix !ifile ".purs") then begin
+		eprintf "Le fichier d'entrée doit avoir l'extension .purs\n@?";
 		Arg.usage options usage;
 		exit 1
 	end;
