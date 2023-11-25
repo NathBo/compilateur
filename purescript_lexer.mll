@@ -29,6 +29,10 @@ rule next_tokens = parse
 	| "import Prelude\nimport Effect\nimport Effect.Console" {Printf.printf "read import\n"; [IMPORT] }
 	| eof {	Printf.printf "fin\n"; [EOF] }
 	| '=' {[EQUAL]}
+	| '-' {[MINUS]}
+	| '+' {[PLUS]}
+	| '*' {[TIMES]}
+	| '/' {[DIVIDE]}
 	| integer as nb { [CONSTANT (Purescript_ast.Cint (int_of_string nb))] }
 	| lident as lid { Printf.printf "read lindent : %s" lid; [LIDENT lid] }
 	| _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
@@ -45,7 +49,7 @@ rule next_tokens = parse
 					let l = next_tokens lb in
 					List.iter (fun t -> Queue.add t tokens) l
 				end;
-		Queue.iter (fun x -> match x with
+		(*Queue.iter (fun x -> match x with
 			| MODULE -> Printf.printf "MODULE ; "
 			| IMPORT -> Printf.printf "IMPORT ; "
 			| EOF -> Printf.printf "EOF ; "
@@ -53,7 +57,7 @@ rule next_tokens = parse
 			| LIDENT l -> Printf.printf "LIDENT %s ; " l
 			| EQUAL -> Printf.printf "= ; "
 			| CONSTANT _ -> Printf.printf "constante ; "
-		) tokens; Printf.printf "\n";
+		) tokens; Printf.printf "\n"; *)
 		Queue.pop tokens
 }
 
