@@ -4,7 +4,6 @@ import Effect
 import Effect.Console
 
 
-main = let
-    x = 1
-    y = 2
-  in log "yes"
+main = case 1 of
+  x -> log "yes"
+  y -> log "no"

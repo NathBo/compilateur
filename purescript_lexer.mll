@@ -134,15 +134,18 @@ and string_ignore = parse
 								Stack.push (c',DO) stack;
 								add (t',c') false
 					| LET | OF ->	
-								addQueue (close c mode) ;
-								if t=LET then 
-									Stack.push (c,LET) stack;
+								let (t',c') = next_token_pair lb in
+
+
 								if t=OF then
 									addQueue (unstack_until CASE);
-								addQueue [t;LEFT_BLOCK] ;
-
-								let (t',c') = next_token_pair lb in
+								addQueue (close c mode) ;
 								addQueue (close c' mode);    (* quel mode ? mode ou true *)
+								if t=LET then 
+									Stack.push (c,LET) stack;
+								addQueue [t;LEFT_BLOCK] ;
+								
+								
 								Stack.push (c',t') stack;
 								add (t',c') false
 
@@ -159,7 +162,7 @@ and string_ignore = parse
 				add nxtT true
 			end;
 
-(*			Printf.printf "etat de la queue :\n   ";
+			Printf.printf "etat de la queue :\n   ";
 			Queue.iter (fun x -> print_string ((match x with
 				| MODULE -> "MODULE"
 				| IMPORT -> "IMPORT"
@@ -184,7 +187,7 @@ and string_ignore = parse
 				| PLUS -> "PLUS"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
-			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n";  *)
+			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; 
 			Queue.pop tokens
 }
 
