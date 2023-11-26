@@ -111,7 +111,7 @@ let rec print_atom fmt a = match a with
   | Alident l -> fprintf fmt "%s" l
   | Auident u -> fprintf fmt "%s" u
   | Aexpr e -> fprintf fmt "%a" print_expr e
-  | _ -> failwith "pas encore implemente"
+  | Aexprtype (e,t) -> fprintf fmt "%a :: %a" print_expr e print_purtype t
 
 and print_expr fmt e = match e with
   | Eminus e -> fprintf fmt "-%a" print_expr e

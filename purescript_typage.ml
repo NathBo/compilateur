@@ -14,8 +14,7 @@ and defn =
   {lident : lident; patargs : patarg list; expr : expr}
 
 and tdecl =
-  | Tforall of lident * lident list
-  | Tarrow of ntype list * purtype list * purtype
+    {dlident : lident; lidentlist : lident list; ntypelist : ntype list; purtypelist : purtype list; purtype : purtype}
 
 and ntype =
   {uident : uident; atypes : atype list}
@@ -85,18 +84,44 @@ type typ =
   | String
   | Boolean
   | Effect of typ
-  | Function of typ*typ
+  | Tenv of string
 
+
+type typfunctions =
+  {flidents : lident list; instancelist : typinstance list; typlist : typ list;typ : typ; matching : (motif list * expr)list}
+
+and typinstance =
+  {typinstancelist : typinstance list; typlist : typ list; matching : (lident * motif list * expr) list}
+
+and motif =
+  | Mconst of constant
+  | Mident of string
+
+and typclass =
+  {variablesdetypes : string list; fonctionsdeclasse : (string * typ list)list}
 
 
 
 module Smap = Map.Make(String)
 
-type env = typ Smap.t
+type envtyps = typ Smap.t
+
+let globalenvtyps = Smap.empty
 
 
 
+
+let globalenvfunctions = Smap.add "not" {flidents = []; instancelist = []; typlist = [Boolean];typ = Boolean;matching = []} Smap.empty
+let globalenvfunctions = Smap.add "mod" {flidents = []; instancelist = []; typlist = [Int;Int];typ = Int;matching = []} globalenvfunctions
+let globalenvfunctions = Smap.add "log" {flidents = []; instancelist = []; typlist = [String];typ = Effect(Unit);matching = []} globalenvfunctions
+let globalenvfunctions = Smap.add "pure" {flidents = ["a"]; instancelist = []; typlist = [Tenv "a"];typ = Effect(Tenv "a");matching = []} globalenvfunctions
+
+let globalenvclasses = Smap.add "Show" {variablesdetypes = ["a"]; fonctionsdeclasse = [("show",[Tenv "a";String])]} Smap.empty
+let globalenvfunctions = Smap.add "show" {flidents = ["a"]; instancelist = []; typlist = [Tenv "a"];typ = String;matching = []} globalenvfunctions
+
+let globalenvinstances = Smap.add "Show" [([Boolean],{typinstancelist = []; typlist = [Boolean]; matching = []});([Int],{typinstancelist = []; typlist = [Int]; matching = []})]
 
 let ex =
-  {imports = Import;decls = [Dclass("C",["foo"],[Tarrow([],[],Patype(Auident("Int")))])]}
+  {imports = Import;decls = [Dclass("C",[],[{dlident = "foo"; lidentlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
+
 
