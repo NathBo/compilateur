@@ -121,10 +121,13 @@ and print_expr fmt e = match e with
   | Edo e -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
   | Elet (b,e) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e
   | Eatom a -> print_atom fmt a (* TODO : a modifier j'ai rajouté ça vite fait sans bien comprendre la syntaxe *)
-  | _ -> failwith "Pas implemente"
+  | Ecase (e,b) -> fprintf fmt "case %a of {@[<hov>%a@]}" print_expr e  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@") print_branch) b
 
 and print_bindings fmt b =
   fprintf fmt "%s = %a" b.lident print_expr b.expr
+
+and print_branch fmt b =
+  fprintf fmt "%a -> %a" print_pattern b.pattern print_expr b.expr
 
 and print_patarg fmt p =match p with
   | Pconstant c -> fprintf fmt "%a" print_constant c

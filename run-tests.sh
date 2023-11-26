@@ -45,7 +45,7 @@ for f in tests/syntax/bad/*.purs; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
+	echo "ECHEC sur "$f" (devrait Echouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -96,7 +96,7 @@ for f in tests/typing/bad/*.purs; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
+	echo "ECHEC sur "$f" (devrait Echouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -186,7 +186,7 @@ for f in tests/exec-fail/*.purs; do
 	score_comp=`expr $score_comp + 1`;
 	if ./a.out > out; then
 	    echo
-	    echo "ECHEC : devrait Ã©chouer sur $f"
+	    echo "ECHEC : devrait Echouer sur $f"
 	else
 	    score_test=`expr $score_test + 1`;
 	    score_out=`expr $score_out + 1`;

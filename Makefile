@@ -1,8 +1,11 @@
 all: purescript_main.exe
 	dune exec ./purescript_main.exe test.purs
 
-tests: purescript_main.exe
+tests1: purescript_main.exe
+	./run-tests.sh -1 ./purescript_main.exe
+testsAll: purescript_main.exe
 	./run-tests.sh -all ./purescript_main.exe
+
 
 miniturtle.exe:
 	dune build purescript_main.exe
