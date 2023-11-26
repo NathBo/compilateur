@@ -69,6 +69,7 @@ rule next_tokens = parse
 	| '/' {[DIVIDE, curCol lexbuf -1]}
 	| '(' {[LEFT_PAR, curCol lexbuf -1 ]}
 	| ')' {[RIGHT_PAR, curCol lexbuf -1]}
+	| '|' {[VBAR, curCol lexbuf -1]}
 	| "true" {[TRUE, curCol lexbuf -4]}
 	| "false" {[FALSE, curCol lexbuf -5]}
 	| "if" { [IF, curCol lexbuf -2] }
@@ -80,6 +81,7 @@ rule next_tokens = parse
 	| "case" { [CASE, curCol lexbuf -4] }
 	| "of" { [OF, curCol lexbuf -2] }
 	| "->" { [ARROW, curCol lexbuf -2] }
+	| "data" { [DATA, curCol lexbuf -4] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
@@ -149,8 +151,13 @@ and string_ignore = parse
 								Stack.push (c',t') stack;
 								add (t',c') false
 
-					| IN ->	addQueue (unstack_until LET); addQueue [IN]
-					| CASE -> 
+					| THEN | ELSE | IN ->
+						let attente = match t with | IN -> LET | THEN -> IF | ELSE -> THEN | _ -> failwith "erreur interne au lexer" in
+						addQueue (unstack_until attente);
+						if t=THEN then
+							Stack.push (c,t) stack;
+						addQueue [t]
+					| IF | CASE -> 
 								addQueue (close c mode) ;
 								Stack.push (c,t) stack;
 								addQueue [t]

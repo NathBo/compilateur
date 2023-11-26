@@ -3,7 +3,7 @@
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
-%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW
+%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR
 %token MINUS PLUS TIMES DIVIDE
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
@@ -41,6 +41,7 @@ expr:
 	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
 	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }
 	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
+	| IF e1=expr THEN e2=expr ELSE e3=expr { Eif (e1,e2,e3) }
 ;
 atom :
 	| c=constant { Aconstant c }
