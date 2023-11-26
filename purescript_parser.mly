@@ -3,7 +3,7 @@
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
-%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN
+%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW
 %token MINUS PLUS TIMES DIVIDE
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
@@ -40,6 +40,7 @@ expr:
 	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
 	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
 	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }
+	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
 ;
 atom :
 	| c=constant { Aconstant c }
@@ -55,6 +56,18 @@ constant:
 binding:
 	| l=LIDENT EQUAL e=expr { {lident=l;expr=e} }
 ;
+branch:
+	| p=pattern ARROW e=expr { {pattern=p ; expr=e} } 
+;
+pattern:
+	| p=patarg	{ Ppatarg p }
+;
+patarg:
+	| c=constant { Pconstant c }
+	| l=LIDENT { Plident l }
+	| u=UIDENT { Puident u }
+	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
+
 %inline binop:
 	| MINUS { Bminus }
 	| PLUS { Bplus }

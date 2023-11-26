@@ -5,16 +5,16 @@
 	exception Lexing_error of string
 
 	let stack = Stack.create ()
-	let () = Stack.push 0 stack
+	let () = Stack.push (0,MIDLE_BLOCK) stack
 
 	let close n mode =
 		if mode then begin
 			let result = ref [] in
-			while not (Stack.is_empty stack) && (Stack.top stack > n) do
+			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) do
 				result := RIGHT_BLOCK :: !result;
 				ignore (Stack.pop stack)
 			done ;
-			if not (Stack.is_empty stack) && (Stack.top stack = n) then
+			if not (Stack.is_empty stack) && (fst(Stack.top stack) = n) then
 				!result @ [MIDLE_BLOCK]
 			else !result
 		end else []
@@ -22,6 +22,20 @@
 	let close_without_midle n mode =
 		let r = close n mode in
 		List.filter (fun t -> match t with | MIDLE_BLOCK -> false | _ -> true) r
+	
+	let unstack_until symb =
+(*		Printf.printf "UNSTACK !!!!\n";
+		Printf.printf "   : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
+		let result = ref [] in
+		while not (Stack.is_empty stack) && (snd(Stack.top stack) <> symb) do
+			result := RIGHT_BLOCK :: !result;
+			ignore (Stack.pop stack)
+		done;
+		if Stack.is_empty stack then begin
+			raise (Lexing_error "erreur d'indentation")
+		end else (ignore (Stack.pop stack) ; !result)
+
+
 
 	
 
@@ -63,6 +77,9 @@ rule next_tokens = parse
 	| "do" { [DO, curCol lexbuf -2] }
 	| "let" { [LET, curCol lexbuf -3] }
 	| "in" { [IN, curCol lexbuf -2] }
+	| "case" { [CASE, curCol lexbuf -4] }
+	| "of" { [OF, curCol lexbuf -2] }
+	| "->" { [ARROW, curCol lexbuf -2] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
@@ -114,17 +131,26 @@ and string_ignore = parse
 								addQueue [DO;LEFT_BLOCK] ;
 								let (t',c') = next_token_pair lb in
 								addQueue (close c' mode); 
-								Stack.push c' stack;
+								Stack.push (c',DO) stack;
 								add (t',c') false
-					| LET ->	addQueue (close c mode) ;
-								Stack.push c stack;
-								addQueue [LET;LEFT_BLOCK] ;
-								let (t',c') = next_token_pair lb in
-								addQueue (close c' mode); 
-								Stack.push c' stack;
-								add (t',c') false
-					| IN ->	failwith "todo"
+					| LET | OF ->	
+								addQueue (close c mode) ;
+								if t=LET then 
+									Stack.push (c,LET) stack;
+								if t=OF then
+									addQueue (unstack_until CASE);
+								addQueue [t;LEFT_BLOCK] ;
 
+								let (t',c') = next_token_pair lb in
+								addQueue (close c' mode);    (* quel mode ? mode ou true *)
+								Stack.push (c',t') stack;
+								add (t',c') false
+
+					| IN ->	addQueue (unstack_until LET); addQueue [IN]
+					| CASE -> 
+								addQueue (close c mode) ;
+								Stack.push (c,t) stack;
+								addQueue [t]
 
 
 					| EOF -> addQueue (close_without_midle c mode) ; Queue.add t tokens
@@ -133,27 +159,32 @@ and string_ignore = parse
 				add nxtT true
 			end;
 
-			Printf.printf "etat de la queue :\n   ";
-			Queue.iter (fun x -> match x with
-				| MODULE -> Printf.printf "MODULE ; "
-				| IMPORT -> Printf.printf "IMPORT ; "
-				| EOF -> Printf.printf "EOF ; "
-				| LIDENT l -> Printf.printf "LIDENT %s ; " l
-				| EQUAL -> Printf.printf "= ; "
-				| CONST_INT i -> Printf.printf "const %d ; " i
-				| IF -> Printf.printf "IF ; "
-				| THEN -> Printf.printf "THEN ; "
-				| ELSE -> Printf.printf "ELSE ; "
-				| TRUE | FALSE -> Printf.printf "BOOLEEN ; "
-				| LEFT_BLOCK -> Printf.printf "__{__ ; "
-				| RIGHT_BLOCK -> Printf.printf "__}__ ; "
-				| MIDLE_BLOCK -> Printf.printf "__;__ ; "
-				| DO -> Printf.printf "DO ; "
-				| STRING a -> Printf.printf "string : %s ; " a
-				| IN -> Printf.printf "in ; "
-				| LET -> Printf.printf "let ; "
-				| _ -> failwith "erreur affichage des leexems"
-			) tokens; Printf.printf "\n"; 
+(*			Printf.printf "etat de la queue :\n   ";
+			Queue.iter (fun x -> print_string ((match x with
+				| MODULE -> "MODULE"
+				| IMPORT -> "IMPORT"
+				| EOF -> "EOF"
+				| LIDENT _ -> "LIDENT"
+				| EQUAL -> "="
+				| CONST_INT _ -> "const int"
+				| IF -> "IF"
+				| THEN -> "THEN"
+				| ELSE -> "ELSE"
+				| TRUE | FALSE -> "BOOLEEN"
+				| LEFT_BLOCK -> "__{__"
+				| RIGHT_BLOCK -> "__}__"
+				| MIDLE_BLOCK -> "__;__"
+				| DO -> "DO"
+				| STRING _ -> "string"
+				| IN -> "in"
+				| LET -> "let"
+				| CASE -> "CASE"
+				| ARROW -> "_->__"
+				| OF -> "OF"
+				| PLUS -> "PLUS"
+				| _ -> "??????"
+			)^" ; ")) tokens; Printf.printf "\n"; 
+			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n";  *)
 			Queue.pop tokens
 }
 
