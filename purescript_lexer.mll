@@ -70,6 +70,15 @@ rule next_tokens = parse
 	| '(' {[LEFT_PAR, curCol lexbuf -1 ]}
 	| ')' {[RIGHT_PAR, curCol lexbuf -1]}
 	| '|' {[VBAR, curCol lexbuf -1]}
+	| "==" {[DOUBLE_EQUAL, curCol lexbuf -2]}
+	| "/=" {[DIV_EQUAL, curCol lexbuf -2]}
+	| "<" {[LESS, curCol lexbuf -1]}
+	| "<=" {[LESS_E, curCol lexbuf -2]}
+	| ">" {[GREATER, curCol lexbuf -1]}
+	| ">=" {[GREATER_E, curCol lexbuf -2]}
+	| "<>" {[DIF, curCol lexbuf -2]}
+	| "&&" {[AND_LOG, curCol lexbuf -2]}
+	| "||" {[OR_LOG, curCol lexbuf -2]}
 	| "true" {[TRUE, curCol lexbuf -4]}
 	| "false" {[FALSE, curCol lexbuf -5]}
 	| "if" { [IF, curCol lexbuf -2] }

@@ -4,7 +4,7 @@
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
 %token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR
-%token MINUS PLUS TIMES DIVIDE
+%token MINUS PLUS TIMES DIVIDE DOUBLE_EQUAL DIV_EQUAL LESS LESS_E GREATER GREATER_E DIF AND_LOG OR_LOG
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
 %token <Purescript_ast.lident> UIDENT
@@ -70,8 +70,16 @@ patarg:
 	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
 
 %inline binop:
+	| DOUBLE_EQUAL {Bequals}
+	| DIF {Bnotequals}
+	| LESS {Binf}
+	| LESS_E {Binfeq}
+	| GREATER {Bsup}
+	| GREATER_E {Bsupeq}
 	| MINUS { Bminus }
 	| PLUS { Bplus }
 	| TIMES { Btimes }
 	| DIVIDE { Bdivide }
+	| AND_LOG {Band}
+	| OR_LOG {Bor}
 ;
