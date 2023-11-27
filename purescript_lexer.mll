@@ -10,7 +10,8 @@
 	let close n mode =
 		if mode then begin
 			let result = ref [] in
-			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) do
+			(* while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) do *)
+			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) && (not (List.mem (snd (Stack.top stack)) [LEFT_PAR; IF; ELSE; LET])) do
 				result := RIGHT_BLOCK :: !result;
 				ignore (Stack.pop stack)
 			done ;
@@ -149,9 +150,7 @@ and string_ignore = parse
 								Stack.push (c',DO) stack;
 								add (t',c') false *)
 					| WHERE | LET | OF | DO ->	
-								let (t',c') = next_token_pair lb in
-
-
+							(*	let (t',c') = next_token_pair lb in
 								if t=OF then
 									addQueue (unstack_until CASE);
 								addQueue (close c mode) ;
@@ -159,10 +158,20 @@ and string_ignore = parse
 								if t=LET then 
 									Stack.push (c,LET) stack;
 								addQueue [t;LEFT_BLOCK] ;
-								
-								
+								Stack.push (c',t') stack;
+								add (t',c') false *)
+
+								addQueue (close c mode) ;
+								if t=OF then
+									addQueue (unstack_until CASE);
+								let (t',c') = next_token_pair lb in
+								addQueue (close c' mode);    (* quel mode ? mode ou true *)
+								if t=LET then 
+									Stack.push (c,LET) stack;
+								addQueue [t;LEFT_BLOCK] ;
 								Stack.push (c',t') stack;
 								add (t',c') false
+
 
 					| RIGHT_PAR | THEN | ELSE | IN ->
 						let attente = match t with | IN -> LET | THEN -> IF | ELSE -> THEN | RIGHT_PAR -> LEFT_PAR | _ -> failwith "erreur interne au lexer" in

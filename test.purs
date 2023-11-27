@@ -4,6 +4,7 @@ import Effect
 import Effect.Console
 
 
-main = do log ("hello "
-  <> "world")
-          log "done"
+main = do log "a"
+          do log "b"
+             log "c"
+
