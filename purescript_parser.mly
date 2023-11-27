@@ -7,7 +7,7 @@
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
-%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR INSTANCE COMMA WHERE DOUBLE_ARROW DOUBLE_COLON
+%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR INSTANCE COMMA WHERE DOUBLE_ARROW DOUBLE_COLON FORALL DOT CLASS
 %token MINUS PLUS TIMES DIVIDE DOUBLE_EQUAL DIV_EQUAL LESS LESS_E GREATER GREATER_E DIF AND_LOG OR_LOG
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
@@ -36,8 +36,9 @@ file:
 ;
 decl:
 	| d=defn {Ddefn d}
-	(*| t=tdecl {Dtdecl t}*)
+	| t=tdecl {Dtdecl t}
 	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
+	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Dclass (u,l,d) }
 	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
 ;
 (* for data : *)
@@ -47,49 +48,55 @@ uidentAtypeList:
 defn:
 	| lid=LIDENT a=list(patarg) EQUAL e=expr { {lident = lid; patargs = a; expr=e } }
 ;
-(*tdecl:
-	| DIV_EQUAL
-			{{dlident="l"; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=(Patype (Alident "ll"))} }
-(*	| l=LIDENT DOUBLE_COLON a=list(LIDENT) b=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow)
+tdecl:
+	(*| l=LIDENT DOUBLE_COLON a=list(LIDENT) b=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow)
+			(* {{dlident="l"; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=(Patype (Alident "ll"))} } *)
 		{ let c,d=separe_fin (fin1::fin2) in
 			{dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} } *)
-;*)
+	(*| l=LIDENT DOUBLE_COLON FORALL a=nonempty_list(LIDENT) DOT b=list(pairNtypeArrow) c=list(pairPurTypeArrow) d=purtype
+			{ {dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} }
+	| l=LIDENT DOUBLE_COLON b=list(pairNtypeArrow) c=list(pairPurTypeArrow) d=purtype
+			{ {dlident=l; lidentlist=[]; ntypelist=b; purtypelist=c; purtype=d} } *)
+	| l=LIDENT DOUBLE_COLON d=purtype
+			{ {dlident=l; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=d} }
+;
 (* for tdecl *)
-(*pairNtypeArrow:
+pairNtypeArrow:
 	| n=ntype DOUBLE_ARROW { n }
 ;
 pairPurTypeArrow:
-	| ARROW p=purtype { p }
-;*)
+	| p=purtype ARROW { p }
+;
 ntype:
-	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} }
+	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} } 
+;
+ntypeMany:
+	| u=UIDENT a=nonempty_list(atype) { {uident = u ; atypes = a} } 
+;
+
 atype:
 	| l=LIDENT { Alident l}
 	| u=UIDENT { Auident u}
+	| LEFT_PAR t=purtype RIGHT_PAR { Apurtype t }
 ;
-(*purtype:
+purtype:  (* TODO : un uident peut être vu comme un atype ou un ntype, j'ai fait un choix aleatoire *)
 	| a=atype {Patype a}
-	| n=ntype {Pntype n}
-;*)
+	| n=ntypeMany {Pntype n}
+;
 instance:
 	| n=ntype { Intype n}
 	| x=ntype DOUBLE_ARROW y=ntype {Iarrow (x,y) }
 	| LEFT_PAR l=separated_nonempty_list(COMMA, ntype) RIGHT_PAR DOUBLE_ARROW n=ntype {Imularrow (l,n)}
 ;
-expr:
-	| a=atom { Eatom a }
-	| MINUS e=expr { Eminus e }
-	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
-	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
-	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
-	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
-	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }
-	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
-	| IF e1=expr THEN e2=expr ELSE e3=expr { Eif (e1,e2,e3) }
+patarg:
+	| c=constant { Pconstant c }
+	| l=LIDENT { Plident l }
+	| u=UIDENT { Puident u }
+	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
 ;
-atom :
-	| c=constant { Aconstant c }
-	| LEFT_PAR e=expr RIGHT_PAR { Aexpr e }
+pattern:
+	| p=patarg	{ Ppatarg p }
+	| u=UIDENT p=nonempty_list(patarg) { Pmulpatarg (u,p) }
 ;
 constant:
 	| i=CONST_INT {Cint i}
@@ -97,22 +104,32 @@ constant:
 	| FALSE {Cbool false}
 	| s=STRING {Cstring s}
 ;
+atom :
+	| c=constant { Aconstant c }
+	| l=LIDENT { Alident l}
+	| u=UIDENT {Auident u}
+	| LEFT_PAR e=expr RIGHT_PAR { Aexpr e }
+	| LEFT_PAR e=expr DOUBLE_COLON t=purtype RIGHT_PAR { Aexprtype (e,t) }
 
+;
+
+expr:
+	| a=atom { Eatom a }
+	| MINUS e=expr { Eminus e }
+	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
+	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
+	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
+	| IF e1=expr THEN e2=expr ELSE e3=expr { Eif (e1,e2,e3) }
+	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
+	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }
+	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
+;
 binding:
 	| l=LIDENT EQUAL e=expr { {lident=l;expr=e} }
 ;
 branch:
 	| p=pattern ARROW e=expr { {pattern=p ; expr=e} } 
 ;
-pattern:
-	| p=patarg	{ Ppatarg p }
-;
-patarg:
-	| c=constant { Pconstant c }
-	| l=LIDENT { Plident l }
-	| u=UIDENT { Puident u }
-	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
-
 %inline binop:
 	| DOUBLE_EQUAL {Bequals}
 	| DIF {Bnotequals}
@@ -126,4 +143,5 @@ patarg:
 	| DIVIDE { Bdivide }
 	| AND_LOG {Band}
 	| OR_LOG {Bor}
+	| DIV_EQUAL {Bdivequal}
 ;

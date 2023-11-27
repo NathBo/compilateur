@@ -72,7 +72,7 @@ and binding =
 and branch =
   {pattern : pattern; expr : expr}
 
-and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor
+and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor | Bdivequal
 
 and uident = string
 
@@ -103,6 +103,7 @@ let print_binop fmt b = match b with
   | Btimes -> fprintf fmt "*"
   | Band -> fprintf fmt "&&"
   | Bor -> fprintf fmt "||"
+  | Bdivequal -> fprintf fmt "\n"
 
 let print_ident fmt s =
   fprintf fmt "%s" s
@@ -142,7 +143,7 @@ and print_pattern fmt p = match p with
 
 and print_atype fmt a = match a with
   | Alident s | Auident s -> fprintf fmt "%s" s
-  | Apurtype p -> failwith "plus tard"
+  | Apurtype p -> fprintf fmt "%a" print_purtype p
 
 and print_ntype fmt n =
   fprintf fmt "%s(@[<hov>%a@])" n.uident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")  print_atype) n.atypes

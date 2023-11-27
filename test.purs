@@ -3,4 +3,4 @@ import Prelude
 import Effect
 import Effect.Console
 
-a="ab"
+main:: ((Effect Unit))

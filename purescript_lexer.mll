@@ -82,6 +82,7 @@ rule next_tokens = parse
 	| "||" {[OR_LOG, curCol lexbuf -2]}
 	| "::" {[DOUBLE_COLON, curCol lexbuf -2]}
 	| ',' {[COMMA, curCol lexbuf -1]}
+	| '.' {[DOT, curCol lexbuf -1]}
 	| "true" {[TRUE, curCol lexbuf -4]}
 	| "false" {[FALSE, curCol lexbuf -5]}
 	| "if" { [IF, curCol lexbuf -2] }
@@ -97,6 +98,8 @@ rule next_tokens = parse
 	| "data" { [DATA, curCol lexbuf -4] }
 	| "where" { [WHERE, curCol lexbuf -5] }
 	| "instance" { [INSTANCE, curCol lexbuf -8] }
+	| "forall" { [FORALL, curCol lexbuf -6] }
+	| "class" { [CLASS, curCol lexbuf -6] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
@@ -192,7 +195,7 @@ and string_ignore = parse
 				add nxtT true
 			end;
 
-(*			Printf.printf "etat de la queue :\n   ";
+			Printf.printf "etat de la queue :\n   ";
 			Queue.iter (fun x -> print_string ((match x with
 				| MODULE -> "MODULE"
 				| IMPORT -> "IMPORT"
@@ -221,9 +224,10 @@ and string_ignore = parse
 				| DOUBLE_ARROW -> "_=>__"
 				| WHERE -> "WHERE"
 				| DOUBLE_COLON -> "_::__"
+				| UIDENT _ -> "UIDENT"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
-			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
+			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n";
 			Queue.pop tokens
 }
 
