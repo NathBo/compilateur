@@ -3,5 +3,7 @@ import Prelude
 import Effect
 import Effect.Console
 
-instance (A) => B where
-  f x = 1
+
+main = do log ("hello "
+  <> "world")
+          log "done"

@@ -142,13 +142,13 @@ and string_ignore = parse
 				let nxtT = next_token_pair lb in
 				let rec add (t,c) mode = begin
 					match t with
-					| DO ->	addQueue (close c mode) ;
+					(*| DO ->	addQueue (close c mode) ;
 								addQueue [DO;LEFT_BLOCK] ;
 								let (t',c') = next_token_pair lb in
 								addQueue (close c' mode); 
 								Stack.push (c',DO) stack;
-								add (t',c') false
-					| WHERE | LET | OF ->	
+								add (t',c') false *)
+					| WHERE | LET | OF | DO ->	
 								let (t',c') = next_token_pair lb in
 
 
@@ -164,13 +164,13 @@ and string_ignore = parse
 								Stack.push (c',t') stack;
 								add (t',c') false
 
-					| THEN | ELSE | IN ->
-						let attente = match t with | IN -> LET | THEN -> IF | ELSE -> THEN | _ -> failwith "erreur interne au lexer" in
+					| RIGHT_PAR | THEN | ELSE | IN ->
+						let attente = match t with | IN -> LET | THEN -> IF | ELSE -> THEN | RIGHT_PAR -> LEFT_PAR | _ -> failwith "erreur interne au lexer" in
 						addQueue (unstack_until attente);
 						if t=THEN then
 							Stack.push (c,t) stack;
 						addQueue [t]
-					| IF | CASE -> 
+					| IF | LEFT_PAR | CASE -> 
 								addQueue (close c mode) ;
 								Stack.push (c,t) stack;
 								addQueue [t]
@@ -195,7 +195,9 @@ and string_ignore = parse
 				| ELSE -> "ELSE"
 				| TRUE | FALSE -> "BOOLEEN"
 				| LEFT_BLOCK -> "__{__"
+				| LEFT_PAR -> "__(__"
 				| RIGHT_BLOCK -> "__}__"
+				| RIGHT_PAR -> "__)__"
 				| MIDLE_BLOCK -> "__;__"
 				| DO -> "DO"
 				| STRING _ -> "string"
