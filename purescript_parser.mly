@@ -1,9 +1,13 @@
 %{
 	open Purescript_ast
+	let rec separe_fin = function
+		| [] -> failwith "liste vide"
+		| a::b::[] -> ([a],b)
+		| a::b -> let (e,f) = separe_fin b in (a::e,f)
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
-%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR INSTANCE COMMA WHERE DOUBLE_ARROW
+%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR INSTANCE COMMA WHERE DOUBLE_ARROW DOUBLE_COLON
 %token MINUS PLUS TIMES DIVIDE DOUBLE_EQUAL DIV_EQUAL LESS LESS_E GREATER GREATER_E DIF AND_LOG OR_LOG
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
@@ -11,7 +15,11 @@
 %token <string> STRING
 %token <int> CONST_INT
 
-%left MINUS PLUS
+%nonassoc IN ELSE
+%left OR_LOG
+%left AND_LOG
+%nonassoc DOUBLE_EQUAL DIV_EQUAL GREATER GREATER_E LESS LESS_E 
+%left MINUS PLUS DIF
 %left DIVIDE TIMES
 
 
@@ -23,11 +31,12 @@
 
 
 file:
-	| MIDLE_BLOCK* MODULE MIDLE_BLOCK+ IMPORT MIDLE_BLOCK* d=separated_list(MIDLE_BLOCK,decl) MIDLE_BLOCK* EOF
+	| MIDLE_BLOCK* MODULE MIDLE_BLOCK IMPORT MIDLE_BLOCK d=separated_list(MIDLE_BLOCK,decl)  EOF
 		{ {imports = Import; decls = d} }
 ;
 decl:
 	| d=defn {Ddefn d}
+	(*| t=tdecl {Dtdecl t}*)
 	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
 	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
 ;
@@ -38,12 +47,30 @@ uidentAtypeList:
 defn:
 	| lid=LIDENT a=list(patarg) EQUAL e=expr { {lident = lid; patargs = a; expr=e } }
 ;
+(*tdecl:
+	| DIV_EQUAL
+			{{dlident="l"; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=(Patype (Alident "ll"))} }
+(*	| l=LIDENT DOUBLE_COLON a=list(LIDENT) b=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow)
+		{ let c,d=separe_fin (fin1::fin2) in
+			{dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} } *)
+;*)
+(* for tdecl *)
+(*pairNtypeArrow:
+	| n=ntype DOUBLE_ARROW { n }
+;
+pairPurTypeArrow:
+	| ARROW p=purtype { p }
+;*)
 ntype:
 	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} }
 atype:
 	| l=LIDENT { Alident l}
 	| u=UIDENT { Auident u}
 ;
+(*purtype:
+	| a=atype {Patype a}
+	| n=ntype {Pntype n}
+;*)
 instance:
 	| n=ntype { Intype n}
 	| x=ntype DOUBLE_ARROW y=ntype {Iarrow (x,y) }

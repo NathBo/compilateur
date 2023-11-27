@@ -80,6 +80,7 @@ rule next_tokens = parse
 	| "<>" {[DIF, curCol lexbuf -2]}
 	| "&&" {[AND_LOG, curCol lexbuf -2]}
 	| "||" {[OR_LOG, curCol lexbuf -2]}
+	| "::" {[DOUBLE_COLON, curCol lexbuf -2]}
 	| ',' {[COMMA, curCol lexbuf -1]}
 	| "true" {[TRUE, curCol lexbuf -4]}
 	| "false" {[FALSE, curCol lexbuf -5]}
@@ -219,6 +220,7 @@ and string_ignore = parse
 				| INSTANCE -> "INSTANCE"
 				| DOUBLE_ARROW -> "_=>__"
 				| WHERE -> "WHERE"
+				| DOUBLE_COLON -> "_::__"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
 			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
