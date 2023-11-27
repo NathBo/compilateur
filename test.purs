@@ -3,5 +3,5 @@ import Prelude
 import Effect
 import Effect.Console
 
-
-data X' = C
+instance (A) => B where
+  f x = 1

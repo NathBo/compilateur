@@ -3,7 +3,7 @@
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
-%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR
+%token MODULE IMPORT EOF EQUAL LEFT_PAR RIGHT_PAR TRUE FALSE IN CASE OF ARROW DATA VBAR INSTANCE COMMA WHERE DOUBLE_ARROW
 %token MINUS PLUS TIMES DIVIDE DOUBLE_EQUAL DIV_EQUAL LESS LESS_E GREATER GREATER_E DIF AND_LOG OR_LOG
 %token IF THEN ELSE DO LET
 %token <Purescript_ast.lident> LIDENT
@@ -29,17 +29,25 @@ file:
 decl:
 	| d=defn {Ddefn d}
 	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
+	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
 ;
 (* for data : *)
 uidentAtypeList:
 	| u=UIDENT x=list(atype) { (u,x) }
 ;
 defn:
-	| lid=LIDENT EQUAL e=expr { {lident = lid; patargs = []; expr=e } }
+	| lid=LIDENT a=list(patarg) EQUAL e=expr { {lident = lid; patargs = a; expr=e } }
 ;
+ntype:
+	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} }
 atype:
 	| l=LIDENT { Alident l}
 	| u=UIDENT { Auident u}
+;
+instance:
+	| n=ntype { Intype n}
+	| x=ntype DOUBLE_ARROW y=ntype {Iarrow (x,y) }
+	| LEFT_PAR l=separated_nonempty_list(COMMA, ntype) RIGHT_PAR DOUBLE_ARROW n=ntype {Imularrow (l,n)}
 ;
 expr:
 	| a=atom { Eatom a }

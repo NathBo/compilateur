@@ -79,6 +79,7 @@ rule next_tokens = parse
 	| "<>" {[DIF, curCol lexbuf -2]}
 	| "&&" {[AND_LOG, curCol lexbuf -2]}
 	| "||" {[OR_LOG, curCol lexbuf -2]}
+	| ',' {[COMMA, curCol lexbuf -1]}
 	| "true" {[TRUE, curCol lexbuf -4]}
 	| "false" {[FALSE, curCol lexbuf -5]}
 	| "if" { [IF, curCol lexbuf -2] }
@@ -90,7 +91,10 @@ rule next_tokens = parse
 	| "case" { [CASE, curCol lexbuf -4] }
 	| "of" { [OF, curCol lexbuf -2] }
 	| "->" { [ARROW, curCol lexbuf -2] }
+	| "=>" { [DOUBLE_ARROW, curCol lexbuf -2] }
 	| "data" { [DATA, curCol lexbuf -4] }
+	| "where" { [WHERE, curCol lexbuf -5] }
+	| "instance" { [INSTANCE, curCol lexbuf -8] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
@@ -144,7 +148,7 @@ and string_ignore = parse
 								addQueue (close c' mode); 
 								Stack.push (c',DO) stack;
 								add (t',c') false
-					| LET | OF ->	
+					| WHERE | LET | OF ->	
 								let (t',c') = next_token_pair lb in
 
 
@@ -201,6 +205,9 @@ and string_ignore = parse
 				| ARROW -> "_->__"
 				| OF -> "OF"
 				| PLUS -> "PLUS"
+				| INSTANCE -> "INSTANCE"
+				| DOUBLE_ARROW -> "_=>__"
+				| WHERE -> "WHERE"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
 			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
