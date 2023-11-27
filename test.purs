@@ -4,6 +4,4 @@ import Effect
 import Effect.Console
 
 
-main = do log ("hello "
-  <> "world")
-          log "done"
+data X' = C

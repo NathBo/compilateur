@@ -28,9 +28,18 @@ file:
 ;
 decl:
 	| d=defn {Ddefn d}
+	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
+;
+(* for data : *)
+uidentAtypeList:
+	| u=UIDENT x=list(atype) { (u,x) }
 ;
 defn:
 	| lid=LIDENT EQUAL e=expr { {lident = lid; patargs = []; expr=e } }
+;
+atype:
+	| l=LIDENT { Alident l}
+	| u=UIDENT { Auident u}
 ;
 expr:
 	| a=atom { Eatom a }
