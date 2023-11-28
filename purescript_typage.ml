@@ -84,7 +84,10 @@ type typ =
   | String
   | Boolean
   | Effect of typ
-  | Tenv of string
+  | Tarrow of typ*typ
+  | Tvar of tvar
+
+and tvar = {id : int; def : typ option}
 
 
 type typfunctions =
@@ -111,6 +114,7 @@ let globalenvtyps = Smap.empty
 
 
 
+(*
 let globalenvfunctions = Smap.add "not" {flidents = []; instancelist = []; typlist = [Boolean];typ = Boolean;matching = []} Smap.empty
 let globalenvfunctions = Smap.add "mod" {flidents = []; instancelist = []; typlist = [Int;Int];typ = Int;matching = []} globalenvfunctions
 let globalenvfunctions = Smap.add "log" {flidents = []; instancelist = []; typlist = [String];typ = Effect(Unit);matching = []} globalenvfunctions
@@ -120,6 +124,60 @@ let globalenvclasses = Smap.add "Show" {variablesdetypes = ["a"]; fonctionsdecla
 let globalenvfunctions = Smap.add "show" {flidents = ["a"]; instancelist = []; typlist = [Tenv "a"];typ = String;matching = []} globalenvfunctions
 
 let globalenvinstances = Smap.add "Show" [([Boolean],{typinstancelist = []; typlist = [Boolean]; matching = []});([Int],{typinstancelist = []; typlist = [Int]; matching = []})]
+*)
+
+module V = struct
+  type t = tvar
+  let compare v1 v2 = Stdlib.compare v1.id v2.id
+  let equal v1 v2 = v1.id = v2.id
+  let create = let r = ref 0 in fun () -> incr r; { id = !r; def = None }
+end
+
+
+
+let rec head t = match t with
+  | Tvar {id = _; def = Some t2} -> head t2
+  | _ -> t
+
+
+let rec canon t = match t with
+| Tvar {id = _; def = Some t2} -> head t2
+| Tarrow (t1,t2) -> Tarrow (canon t1, canon t2)
+| _ -> t
+
+exception UnificationFailure of typ * typ
+
+let unification_error t1 t2 = raise (UnificationFailure (canon t1, canon t2))
+
+
+let rec occur tv t = match head t with
+  | Tvar tv2 -> V.equal tv tv2
+  | Tarrow (t1,t2) -> occur tv t1 || occur tv t2
+  | _ -> false
+
+
+let defdestyps = Hashtbl.create 256
+
+
+let rec unify t1 t2 = match head t1, head t2 with
+  | Unit,Unit | Int,Int | String,String | Boolean,Boolean -> head t1
+  | Effect t1,Effect t2 -> Effect (unify t1 t2)
+  | Tarrow (a1,a2),Tarrow(b1,b2) -> Tarrow(unify a1 b1, unify a2 b2)
+  | Tvar tv,tau -> if occur tv tau
+    then unification_error t1 t2
+    else Hashtbl.add defdestyps tv.id tau;tau
+  | _,Tvar _ -> unify t2 t1
+  | _ -> unification_error t1 t2
+
+
+module Vset = Set.Make(V)
+
+
+let rec fvars t = ()
+
+
+
+
 
 let ex =
   {imports = Import;decls = [Dclass("C",[],[{dlident = "foo"; lidentlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
