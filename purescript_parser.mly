@@ -2,7 +2,8 @@
 	open Purescript_ast
 	let rec separe_fin = function
 		| [] -> failwith "liste vide"
-		| a::b::[] -> ([a],b)
+		| [a] -> ([],a)
+		| [a;b] -> ([a],b)
 		| a::b -> let (e,f) = separe_fin b in (a::e,f)
 %}
 
@@ -38,7 +39,7 @@ decl:
 	| d=defn {Ddefn d}
 	| t=tdecl {Dtdecl t}
 	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
-	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Dclass (u,l,d) }
+	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Printf.printf "FINI !\n";Dclass (u,l,d) }
 	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
 ;
 (* for data : *)
@@ -57,15 +58,38 @@ tdecl:
 			{ {dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} }
 	| l=LIDENT DOUBLE_COLON b=list(pairNtypeArrow) c=list(pairPurTypeArrow) d=purtype
 			{ {dlident=l; lidentlist=[]; ntypelist=b; purtypelist=c; purtype=d} } *)
-	| l=LIDENT DOUBLE_COLON d=purtype
-			{ {dlident=l; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=d} }
+(*	| a=LIDENT DOUBLE_COLON c=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow) 
+			{Printf.printf "taille liste %d\n" (List.length (fin1::fin2));
+ 				let (x,y) = separe_fin (fin1::fin2) in 
+				{dlident=a; lidentlist=[]; ntypelist=c; purtypelist=x; purtype=y} }
+	| a=LIDENT DOUBLE_COLON FORALL b=nonempty_list(LIDENT) DOT c=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow) 
+			{ let (x,y) = separe_fin (fin1::fin2) in Printf.printf "taille liste %d\n" (List.length (fin1::fin2));
+				{dlident=a; lidentlist=b; ntypelist=c; purtypelist=x; purtype=y} }
+*)	
+	
+	| a=LIDENT DOUBLE_COLON b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
+			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+	
+	| a=LIDENT DOUBLE_COLON e=purtype f=list(pairArrowPurType)
+			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+
+
+	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
+			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+	
+	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT e=purtype f=list(pairArrowPurType)
+			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+
 ;
 (* for tdecl *)
 pairNtypeArrow:
 	| n=ntype DOUBLE_ARROW { n }
 ;
-pairPurTypeArrow:
-	| p=purtype ARROW { p }
+pairArrowNtype:
+	| DOUBLE_ARROW n=ntype {n}
+;
+pairArrowPurType:
+	| ARROW p=purtype { p }
 ;
 ntype:
 	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} } 

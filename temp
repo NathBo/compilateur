@@ -1,0 +1,979 @@
+dune exec ./purescript_main.exe test.purs
+etat de la queue :
+   __;__ ; MODULE ; 
+etat de la pile : 0 
+etat de la queue :
+   MODULE ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; IMPORT ; 
+etat de la pile : 0 
+etat de la queue :
+   IMPORT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   PLUS ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   let ; __{__ ; LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   __{__ ; LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   = ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   __}__ ; in ; 
+etat de la pile : 0 
+etat de la queue :
+   in ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 30 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 30 0 
+etat de la queue :
+   PLUS ; 
+etat de la pile : 30 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 30 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 30 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 30 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   let ; __{__ ; LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   __{__ ; LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   = ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 17 13 0 
+etat de la queue :
+   __}__ ; in ; 
+etat de la pile : 0 
+etat de la queue :
+   in ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 33 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 33 0 
+etat de la queue :
+   PLUS ; 
+etat de la pile : 33 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 33 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 33 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 33 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   let ; __{__ ; LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   __{__ ; LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   = ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   = ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 6 2 0 
+etat de la queue :
+   __}__ ; in ; 
+etat de la pile : 0 
+etat de la queue :
+   in ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 7 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 7 0 
+etat de la queue :
+   PLUS ; 
+etat de la pile : 7 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 7 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 33 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 33 25 17 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 33 25 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 47 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 47 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 47 25 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 47 25 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 25 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 17 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 17 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 24 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 24 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 24 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 38 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 38 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 38 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   IF ; 
+etat de la pile : 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 2 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 2 0 
+etat de la queue :
+   THEN ; 
+etat de la pile : 16 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 16 0 
+etat de la queue :
+   ELSE ; 
+etat de la pile : 0 
+etat de la queue :
+   let ; __{__ ; LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   __{__ ; LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   = ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 24 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 24 8 4 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 32 24 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 32 24 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 32 24 8 4 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 24 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 24 8 4 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   __}__ ; in ; 
+etat de la pile : 0 
+etat de la queue :
+   in ; 
+etat de la pile : 0 
+etat de la queue :
+   let ; __{__ ; LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   __{__ ; LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   = ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   IF ; 
+etat de la pile : 13 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 13 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 13 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 13 8 4 0 
+etat de la queue :
+   THEN ; 
+etat de la pile : 27 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 27 8 4 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 27 8 4 0 
+etat de la queue :
+   string ; 
+etat de la pile : 27 8 4 0 
+etat de la queue :
+   ELSE ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   string ; 
+etat de la pile : 8 4 0 
+etat de la queue :
+   __}__ ; in ; 
+etat de la pile : 0 
+etat de la queue :
+   in ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __(__ ; 
+etat de la pile : 9 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 9 0 
+etat de la queue :
+   PLUS ; 
+etat de la pile : 9 0 
+etat de la queue :
+   const int ; 
+etat de la pile : 9 0 
+etat de la queue :
+   __)__ ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _::__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   _->__ ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   UIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   __;__ ; LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 0 
+etat de la queue :
+   = ; 
+etat de la pile : 0 
+etat de la queue :
+   IF ; 
+etat de la pile : 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 2 0 
+etat de la queue :
+   ?????? ; 
+etat de la pile : 2 0 
+etat de la queue :
+   LIDENT ; 
+etat de la pile : 2 0 
+etat de la queue :
+   THEN ; 
+etat de la pile : 15 0 
+etat de la queue :
+   __}__ ; let ; __{__ ; LIDENT ; 
+etat de la pile : 8 4 0 

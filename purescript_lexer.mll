@@ -11,7 +11,7 @@
 		if mode then begin
 			let result = ref [] in
 			(* while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) do *)
-			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) && (not (List.mem (snd (Stack.top stack)) [LEFT_PAR; IF; ELSE; LET])) do
+			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) && (not (List.mem (snd (Stack.top stack)) [LEFT_PAR; IF; THEN; LET])) do
 				result := RIGHT_BLOCK :: !result;
 				ignore (Stack.pop stack)
 			done ;
@@ -46,11 +46,11 @@
 
 let digit = ['0'-'9']
 let upper = ['A'-'Z']
-let lower = ['a'-'z']
+let lower = ['a'-'z'] | '_'
 let other = lower | upper | digit | '\''
 let lident = lower (other *)
 let uident = upper (other | '.')*
-let integer = ['1'-'9'] digit*
+let integer = (['1'-'9'] digit*) | '0'
 
 let commentInline = "--" [^'\n']*
 let space = ' ' | '\t'
@@ -99,7 +99,7 @@ rule next_tokens = parse
 	| "where" { [WHERE, curCol lexbuf -5] }
 	| "instance" { [INSTANCE, curCol lexbuf -8] }
 	| "forall" { [FORALL, curCol lexbuf -6] }
-	| "class" { [CLASS, curCol lexbuf -6] }
+	| "class" { [CLASS, curCol lexbuf -5] }
 	| '"' { let deb = curCol lexbuf in [STRING (string lexbuf), deb-1] }
 	| integer as nb { [CONST_INT (int_of_string nb), curCol lexbuf - String.length nb] }
 	| lident as lid { [LIDENT lid, curCol lexbuf - String.length lid] }
@@ -225,6 +225,7 @@ and string_ignore = parse
 				| WHERE -> "WHERE"
 				| DOUBLE_COLON -> "_::__"
 				| UIDENT _ -> "UIDENT"
+				| CLASS -> "CLASS"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
 			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n";
