@@ -1,10 +1,38 @@
 %{
 	open Purescript_ast
-	let rec separe_fin = function
-		| [] -> failwith "liste vide"
-		| [a] -> ([],a)
-		| [a;b] -> ([a],b)
-		| a::b -> let (e,f) = separe_fin b in (a::e,f)
+
+
+	let genereDecl a b c d =
+		let lst=(DOUBLE_ARROW,c)::d in
+		let rec recupereFin = function
+			| [] -> failwith "liste vide"
+			| [(ARROW,a)] -> [],a
+			| (ARROW,t)::l -> let a,b = recupereFin l in t::a,b
+			| (DOUBLE_ARROW,_)::_ -> failwith "syntax error (1)"
+			| _ -> failwith "erreur interne au parseur"
+		in
+		let toNtype = function
+			| Pntype a -> a
+			| Patype (Alident _ ) | Patype (Apurtype _ ) -> raise Parsing.Parse_error ;
+
+			| Patype (Auident a) -> {uident=a; atypes=[]}
+		in
+		let rec splitList = function
+			| [] -> failwith "liste vide"
+			| [(_,t)] -> [],[],t
+			| (ARROW,t)::l ->
+				let (f1,f2) = recupereFin l in
+				[],t::f1,f2
+			| (DOUBLE_ARROW,t1)::(DOUBLE_ARROW,t2)::l ->
+					let t1' = toNtype t1 in let a,b,c = splitList ((DOUBLE_ARROW,t2)::l) in t1'::a,b,c
+			| (DOUBLE_ARROW,t1)::(ARROW,t2)::l -> let fin1,fin2 = recupereFin ((ARROW,t2)::l) in [],t1::fin1,fin2
+			| _ -> failwith "erreur interne au parseur"
+		in
+		
+		let x,y,z = splitList lst in
+			{dlident=a; lidentlist=b; ntypelist=x; purtypelist=y; purtype=z}
+
+
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
@@ -39,7 +67,7 @@ decl:
 	| d=defn {Ddefn d}
 	| t=tdecl {Dtdecl t}
 	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
-	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Printf.printf "FINI !\n";Dclass (u,l,d) }
+	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Dclass (u,l,d) }
 	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
 ;
 (* for data : *)
@@ -50,47 +78,28 @@ defn:
 	| lid=LIDENT a=list(patarg) EQUAL e=expr { {lident = lid; patargs = a; expr=e } }
 ;
 tdecl:
-	(*| l=LIDENT DOUBLE_COLON a=list(LIDENT) b=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow)
-			(* {{dlident="l"; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=(Patype (Alident "ll"))} } *)
-		{ let c,d=separe_fin (fin1::fin2) in
-			{dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} } *)
-	(*| l=LIDENT DOUBLE_COLON FORALL a=nonempty_list(LIDENT) DOT b=list(pairNtypeArrow) c=list(pairPurTypeArrow) d=purtype
-			{ {dlident=l; lidentlist=a; ntypelist=b; purtypelist=c; purtype=d} }
-	| l=LIDENT DOUBLE_COLON b=list(pairNtypeArrow) c=list(pairPurTypeArrow) d=purtype
-			{ {dlident=l; lidentlist=[]; ntypelist=b; purtypelist=c; purtype=d} } *)
-(*	| a=LIDENT DOUBLE_COLON c=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow) 
-			{Printf.printf "taille liste %d\n" (List.length (fin1::fin2));
- 				let (x,y) = separe_fin (fin1::fin2) in 
-				{dlident=a; lidentlist=[]; ntypelist=c; purtypelist=x; purtype=y} }
-	| a=LIDENT DOUBLE_COLON FORALL b=nonempty_list(LIDENT) DOT c=list(pairNtypeArrow) fin1=purtype fin2=list(pairPurTypeArrow) 
-			{ let (x,y) = separe_fin (fin1::fin2) in Printf.printf "taille liste %d\n" (List.length (fin1::fin2));
-				{dlident=a; lidentlist=b; ntypelist=c; purtypelist=x; purtype=y} }
-*)	
-	
-	| a=LIDENT DOUBLE_COLON b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
+	(*| a=LIDENT DOUBLE_COLON d=list(pairNtypeArrow) e=purtype f=list(pairArrowPurType)
 			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
 	
 	| a=LIDENT DOUBLE_COLON e=purtype f=list(pairArrowPurType)
-			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} } *)
+	
 
 
-	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
+(*	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
 			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
 	
 	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT e=purtype f=list(pairArrowPurType)
 			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
+*)
+	| a=LIDENT DOUBLE_COLON c=purtype d=list(pairArrowType)	{ genereDecl a [] c d }
+	| a=LIDENT DOUBLE_COLON FORALL b=nonempty_list(LIDENT) DOT c=purtype d=list(pairArrowType)	{ genereDecl a b c d }
 
 ;
 (* for tdecl *)
-pairNtypeArrow:
-	| n=ntype DOUBLE_ARROW { n }
-;
-pairArrowNtype:
-	| DOUBLE_ARROW n=ntype {n}
-;
-pairArrowPurType:
-	| ARROW p=purtype { p }
-;
+pairArrowType:
+	| ARROW t=purtype { (ARROW,t) }
+	| DOUBLE_ARROW t=purtype { (DOUBLE_ARROW,t) }
 ntype:
 	| u=UIDENT a=list(atype) { {uident = u ; atypes = a} } 
 ;

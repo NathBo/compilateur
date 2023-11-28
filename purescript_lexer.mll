@@ -195,7 +195,7 @@ and string_ignore = parse
 				add nxtT true
 			end;
 
-			Printf.printf "etat de la queue :\n   ";
+			(*Printf.printf "etat de la queue :\n   ";
 			Queue.iter (fun x -> print_string ((match x with
 				| MODULE -> "MODULE"
 				| IMPORT -> "IMPORT"
@@ -228,7 +228,7 @@ and string_ignore = parse
 				| CLASS -> "CLASS"
 				| _ -> "??????"
 			)^" ; ")) tokens; Printf.printf "\n"; 
-			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n";
+			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
 			Queue.pop tokens
 }
 
