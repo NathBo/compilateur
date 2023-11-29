@@ -1,6 +1,5 @@
 %{
 	open Purescript_ast
-	exception Error_Tdecl
 
 
 	let genereDecl a b c d =
@@ -14,7 +13,7 @@
 		in
 		let toNtype = function
 			| Pntype a -> a
-			| Patype (Alident _ ) | Patype (Apurtype _ ) -> raise Parsing_error
+			| Patype (Alident _ ) | Patype (Apurtype _ ) -> Printf.printf "error 1\n";raise Parsing_error
 
 			| Patype (Auident a) -> {uident=a; atypes=[]}
 		in
@@ -29,8 +28,8 @@
 			| (DOUBLE_ARROW,t1)::(ARROW,t2)::l -> let fin1,fin2 = recupereFin ((ARROW,t2)::l) in [],t1::fin1,fin2
 			| _ -> raise Parsing_error
 		in
-		
-		let x,y,z = splitList lst in
+		Printf.printf "go split\n";		
+		let x,y,z = splitList lst in Printf.printf "split fini\n";
 			{dlident=a; lidentlist=b; ntypelist=x; purtypelist=y; purtype=z}
 
 
