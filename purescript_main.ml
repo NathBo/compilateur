@@ -66,7 +66,7 @@ let () =
 	localisation (Lexing.lexeme_start_p buf);
 	eprintf "Erreur lexicale: %s@." c;
 	exit 1
-		| Purescript_parser.Error ->
+		| Purescript_parser.Error | Purescript_ast.Parsing_error ->
 	(* Erreur syntaxique. On récupère sa position absolue et on la
 		 convertit en numéro de ligne *)
 	localisation (Lexing.lexeme_start_p buf);
