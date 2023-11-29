@@ -1,24 +1,25 @@
 %{
 	open Purescript_ast
+	exception Error_Tdecl
 
 
 	let genereDecl a b c d =
 		let lst=(DOUBLE_ARROW,c)::d in
 		let rec recupereFin = function
-			| [] -> failwith "liste vide"
+			| [] -> raise Parsing_error
 			| [(ARROW,a)] -> [],a
 			| (ARROW,t)::l -> let a,b = recupereFin l in t::a,b
-			| (DOUBLE_ARROW,_)::_ -> failwith "syntax error (1)"
-			| _ -> failwith "erreur interne au parseur"
+			| (DOUBLE_ARROW,_)::_ -> raise Parsing_error
+			| _ -> raise Parsing_error
 		in
 		let toNtype = function
 			| Pntype a -> a
-			| Patype (Alident _ ) | Patype (Apurtype _ ) -> raise Parsing.Parse_error ;
+			| Patype (Alident _ ) | Patype (Apurtype _ ) -> raise Parsing_error
 
 			| Patype (Auident a) -> {uident=a; atypes=[]}
 		in
 		let rec splitList = function
-			| [] -> failwith "liste vide"
+			| [] -> raise Parsing_error
 			| [(_,t)] -> [],[],t
 			| (ARROW,t)::l ->
 				let (f1,f2) = recupereFin l in
@@ -26,7 +27,7 @@
 			| (DOUBLE_ARROW,t1)::(DOUBLE_ARROW,t2)::l ->
 					let t1' = toNtype t1 in let a,b,c = splitList ((DOUBLE_ARROW,t2)::l) in t1'::a,b,c
 			| (DOUBLE_ARROW,t1)::(ARROW,t2)::l -> let fin1,fin2 = recupereFin ((ARROW,t2)::l) in [],t1::fin1,fin2
-			| _ -> failwith "erreur interne au parseur"
+			| _ -> raise Parsing_error
 		in
 		
 		let x,y,z = splitList lst in
@@ -148,7 +149,7 @@ atom :
 
 expr:
 	| a=atom { Eatom a }
-	| MINUS e=expr { Eminus e }
+	| MINUS e=expr { Ebinop(Binf,Eatom(Aconstant(Cint 0)),e) }
 	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
 	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
 	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }

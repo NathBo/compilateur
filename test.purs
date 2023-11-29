@@ -1,7 +1,7 @@
 module Main where
+
 import Prelude
 import Effect
-import Effect.Console
+import Effect . Console
 
-
-main:: a => b
+x = 1
