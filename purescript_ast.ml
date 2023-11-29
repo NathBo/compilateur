@@ -57,7 +57,6 @@ and atom =
 
 and expr =
   | Eatom of atom
-  | Eminus of expr
   | Ebinop of binop * expr * expr
   | Elident of lident * atom list   (*j'ai separe les 2 cas*)
   | Euident of uident * atom list
@@ -117,7 +116,6 @@ let rec print_atom fmt a = match a with
   | Aexprtype (e,t) -> fprintf fmt "%a :: %a" print_expr e print_purtype t
 
 and print_expr fmt e = match e with
-  | Eminus e -> fprintf fmt "-%a" print_expr e
   | Ebinop (b,e1,e2) -> fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Elident (s,a) | Euident (s,a) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
   | Eif (e1,e2,e3) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3

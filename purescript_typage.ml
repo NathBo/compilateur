@@ -56,7 +56,7 @@ and atom =
   | Aexprtype of expr * purtype
 
 and expr =
-  | Eminus of expr
+  | Eatom of atom
   | Ebinop of binop * expr * expr
   | Elident of lident * atom list   (*j'ai separe les 2 cas*)
   | Euident of uident * atom list
@@ -87,7 +87,7 @@ type typ =
   | Tarrow of typ*typ
   | Tvar of tvar
 
-and tvar = {id : int; def : typ option}
+and tvar = {id : int; mutable def : typ option}
 
 
 type typfunctions =
@@ -156,16 +156,16 @@ let rec occur tv t = match head t with
   | _ -> false
 
 
-let defdestyps = Hashtbl.create 256
 
 
 let rec unify t1 t2 = match head t1, head t2 with
-  | Unit,Unit | Int,Int | String,String | Boolean,Boolean -> head t1
-  | Effect t1,Effect t2 -> Effect (unify t1 t2)
-  | Tarrow (a1,a2),Tarrow(b1,b2) -> Tarrow(unify a1 b1, unify a2 b2)
+  | Unit,Unit | Int,Int | String,String | Boolean,Boolean -> ()
+  | Effect t1,Effect t2 -> unify t1 t2
+  | Tarrow (a1,a2),Tarrow(b1,b2) -> unify a1 b1;unify a2 b2
+  | Tvar tv1,Tvar tv2 when V.equal tv1 tv2 -> ()
   | Tvar tv,tau -> if occur tv tau
     then unification_error t1 t2
-    else Hashtbl.add defdestyps tv.id tau;tau
+    else tv.def <- Some t2
   | _,Tvar _ -> unify t2 t1
   | _ -> unification_error t1 t2
 
@@ -173,8 +173,78 @@ let rec unify t1 t2 = match head t1, head t2 with
 module Vset = Set.Make(V)
 
 
-let rec fvars t = ()
+let rec fvars t = match head t with
+  | Unit | Int | String | Boolean -> Vset.empty
+  | Effect t -> fvars t
+  | Tarrow (t1,t2) -> Vset.union (fvars t1) (fvars t2)
+  | Tvar tv -> Vset.singleton tv
 
+
+type schema = { vars : Vset.t; typ : typ }
+module Smap = Map.Make(String)
+type env = { bindings : schema Smap.t; fvars : Vset.t }
+
+let empty = 
+{
+  bindings = Smap.empty;
+  fvars = Vset.empty
+}
+
+let add s t envi = 
+  {bindings = Smap.add s {vars = Vset.empty; typ = t} envi.bindings;fvars = Vset.union envi.fvars (fvars t)}
+
+
+let grossunion s =
+  Vset.fold (fun v s -> Vset.union (fvars (Tvar v)) s) s Vset.empty
+
+let add_gen s t envi =
+  let vt = fvars t in
+  let bindings = { vars = Vset.diff vt (grossunion envi.fvars); typ = t } in
+  {bindings = Smap.add s bindings envi.bindings; fvars = envi.fvars}
+
+module Vmap = Map.Make(V)
+
+let find x env =
+  let tx = Smap.find x env.bindings in
+  let s =
+    Vset.fold (fun v s -> Vmap.add v (Tvar (V.create ())) s)
+      tx.vars Vmap.empty
+  in
+  let rec subst t = match head t with
+    | Tvar x as t -> (try Vmap.find x s with Not_found -> t)
+    | Int | String | Unit | Boolean -> t
+    | Effect t -> Effect (subst t)
+    | Tarrow (t1, t2) -> Tarrow (subst t1, subst t2)
+  in
+  subst tx.typ
+
+exception BadType of expr
+exception NotDefined of string
+
+let badtype e = raise (BadType e)
+let notdefined s = raise (NotDefined s)
+
+
+let rec typexpr env expr = match expr with
+  | Ebinop (b,e1,e2) -> (match b with
+    | Bequals | Bnotequals -> let t = typexpr env e1 in if typexpr env e2 <> t then badtype e2 else Boolean
+    | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Boolean
+    | Bplus | Bminus | Btimes | Bdivide -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Int
+  )
+  | Eatom a -> (match a with
+    | Alident s | Auident s -> find s env
+    | Aconstant c -> (match c with
+      | Cbool _ -> Boolean
+      | Cint _ -> Int
+      | Cstring _ -> String
+    )
+    | Aexpr e -> typexpr env e
+    | _ -> failwith "Pas implémenté"
+  )
+  | Eif (e1,e2,e3) -> if typexpr env e1 <> Boolean then badtype e1 else let t = typexpr env e2 in if typexpr env e3 <> t then badtype e3 else t
+  | Edo elist -> (List.iter (fun e -> let _ = typexpr e in ());Unit)
+  | Elet (blist,e) -> failwith "j'ai pas compris"
+  | _ -> failwith "Pas implémenté"
 
 
 
@@ -182,4 +252,4 @@ let rec fvars t = ()
 let ex =
   {imports = Import;decls = [Dclass("C",[],[{dlident = "foo"; lidentlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
 
-
+let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cint 1)),Eatom(Aconstant (Cint 2)))
