@@ -224,6 +224,17 @@ let badtype e = raise (BadType e)
 let notdefined s = raise (NotDefined s)
 
 
+let rec smapaddlist env l = match l with
+  | [],[] -> env
+  | s::q1,t::q2 -> smapaddlist (Smap.add s t env) (q1,q2)
+  | _ -> failwith "bah non"
+
+
+
+
+let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],[Tarrow([Boolean],Boolean);Tarrow([Int;Int],Int);Tarrow([String],Unit)]))
+
+
 let rec typexpr env envtyps expr = match expr with
   | Ebinop (b,e1,e2) -> (match b with
     | Bequals | Bnotequals -> let t = typexpr env envtyps e1 in if List.mem t [Int;String;Boolean] then (if typexpr env envtyps e2 <> t then badtype e2 else Boolean) else badtype e1
@@ -241,7 +252,14 @@ let rec typexpr env envtyps expr = match expr with
       | [] -> env in
     typexpr (aux env envtyps blist) envtyps e
   | Ecase (e,blist) -> failwith "plus tard"
-  | Eident (f,alist) -> failwith "les fonctions c pour apres"
+  | Eident (f,alist) -> match Smap.find f !envfonctions with
+    | Tarrow(tlist,t) -> let rec aux tlist alist = (match tlist,alist with
+      | [],[] -> ()
+      | t::q1,a::q2 -> if typatom env envtyps a <> t then failwith "mauvais argument de fonction" else aux q1 q2
+      | _ -> failwith "pas possible") in aux tlist alist;t
+    | _ -> failwith "pas possible"
+
+
 
 and typatom env envtyps a = match a with
   | Aident s -> find s env
@@ -274,12 +292,31 @@ and typatype env envtyps a = match a with
 and typtdecl env envtyps td =
   Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
 
-and typdfn env envtyps df =
+and typdfn env envtyps df tlist t =
   let conflit s _ _ = failwith "conflit dans les patternes" in
   let rec aux envi ptlist tlist = match ptlist,tlist with
     | [],[] -> envi
-    | pt::q1,t::q2 -> Smap.union conflit (ensuretyppattern env envtyps t pt)
+    | pt::q1,t::q2 -> let a = ensuretyppatarg env envtyps t pt in
+    {bindings = Smap.union conflit a.bindings envi.bindings; fvars = Vset.union a.fvars envi.fvars}
+    | _ -> failwith "Pattern pas compatible" in
+  let env = aux empty df.patargs tlist in
+  if typexpr env envtyps df.expr<>t
+  then badtype df.expr
+  else ()
   
+and typdecl env envtyps d = match d with
+  | Dtdecl td -> let t = typtdecl env !envtyps td in envfonctions := Smap.add td.dident t !envfonctions
+  | Ddefn df -> (match Smap.find df.ident !envfonctions with
+    | Tarrow(tlist,t) -> typdfn env !envtyps df tlist t
+    | _ -> failwith "pas possible")
+  | _ -> failwith "pas implémenté"
+
+
+
+and typfile f =
+  let env = empty in
+  let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean"],[Int;String;Unit;Boolean])) in
+  List.iter (typdecl env envtyps) f.decls
 
 
 
@@ -291,4 +328,13 @@ let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cint 
 
 let ex2 = Eif(Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cstring "yes")),Eatom(Aconstant (Cint 1)))
 
-let t = typexpr empty Smap.empty exsimple
+let exfile = {imports = Import; decls = 
+  [
+    Dtdecl{dident = "main";identlist = [];ntypelist = [];purtypelist = [];purtype = Patype(Aident "Unit")};
+    Ddefn{ident = "main";patargs = [];expr = Eident("log",[Aconstant(Cstring "")])}
+  ]}
+
+let() = typfile exfile
+
+
+
