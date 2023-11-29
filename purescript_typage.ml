@@ -71,7 +71,7 @@ and binding =
 and branch =
   {pattern : pattern; expr : expr}
 
-and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide
+and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Bcons | Band | Bor
 
 and uident = string
 
@@ -227,7 +227,7 @@ let notdefined s = raise (NotDefined s)
 
 let rec typexpr env expr = match expr with
   | Ebinop (b,e1,e2) -> (match b with
-    | Bequals | Bnotequals -> let t = typexpr env e1 in if typexpr env e2 <> t then badtype e2 else Boolean
+    | Bequals | Bnotequals -> let t = typexpr env e1 in if List.mem t [Int;String;Boolean] then (if typexpr env e2 <> t then badtype e2 else Boolean) else badtype e1
     | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Boolean
     | Bplus | Bminus | Btimes | Bdivide -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Int
   )
@@ -242,7 +242,7 @@ let rec typexpr env expr = match expr with
     | _ -> failwith "Pas implémenté"
   )
   | Eif (e1,e2,e3) -> if typexpr env e1 <> Boolean then badtype e1 else let t = typexpr env e2 in if typexpr env e3 <> t then badtype e3 else t
-  | Edo elist -> (List.iter (fun e -> let _ = typexpr e in ());Unit)
+  | Edo elist -> (List.iter (fun e -> if typexpr env e <> Effect Unit then badtype e else ()) elist;Effect Unit)
   | Elet (blist,e) -> failwith "j'ai pas compris"
   | _ -> failwith "Pas implémenté"
 
