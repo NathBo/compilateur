@@ -67,7 +67,7 @@ and binding =
 and branch =
   {pattern : pattern; expr : expr}
 
-and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor
+and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor | Bcons
 
 
 and ident = string
@@ -97,6 +97,7 @@ let print_binop fmt b = match b with
   | Btimes -> fprintf fmt "*"
   | Band -> fprintf fmt "&&"
   | Bor -> fprintf fmt "||"
+  | Bcons -> fprintf fmt "<>"
 
 let print_ident fmt s =
   fprintf fmt "%s" s

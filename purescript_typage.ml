@@ -6,22 +6,21 @@ and imports = Import
 and decl =
   | Ddefn of defn
   | Dtdecl of tdecl
-  | Ddata of uident * (lident list) * ((uident * (atype list)) list)
-  | Dclass of uident * (lident list) * tdecl list
+  | Ddata of ident * (ident list) * ((ident * (atype list)) list)
+  | Dclass of ident * (ident list) * tdecl list
   | Dinstance of instance * defn list
 
 and defn =
-  {lident : lident; patargs : patarg list; expr : expr}
+  {ident : ident; patargs : patarg list; expr : expr}
 
 and tdecl =
-    {dlident : lident; lidentlist : lident list; ntypelist : ntype list; purtypelist : purtype list; purtype : purtype}
+  {dident : ident; identlist : ident list; ntypelist : ntype list; purtypelist : purtype list; purtype : purtype}
 
 and ntype =
-  {uident : uident; atypes : atype list}
+  {nident : ident; atypes : atype list}
 
 and atype =
-  | Alident of lident
-  | Auident of uident
+  | Aident of ident
   | Apurtype of purtype
 
 and purtype =     (*remplace type car type est un mot clef en Ocaml*)
@@ -35,13 +34,12 @@ and instance =
 
 and patarg =
   | Pconstant of constant
-  | Plident of lident
-  | Puident of uident
+  | Pident of ident
   | Ppattern of pattern
 
 and pattern =
   | Ppatarg of patarg
-  | Pmulpatarg of uident * patarg list
+  | Pmulpatarg of ident * patarg list
 
 and constant =
   | Cbool of bool
@@ -50,32 +48,29 @@ and constant =
 
 and atom =
   | Aconstant of constant
-  | Alident of lident
-  | Auident of uident
+  | Aident of ident
   | Aexpr of expr
   | Aexprtype of expr * purtype
 
 and expr =
   | Eatom of atom
   | Ebinop of binop * expr * expr
-  | Elident of lident * atom list   (*j'ai separe les 2 cas*)
-  | Euident of uident * atom list
+  | Eident of ident * atom list 
   | Eif of expr * expr * expr
   | Edo of expr list
   | Elet of binding list * expr
   | Ecase of expr * branch list
 
 and binding =
-  {lident : lident; expr : expr}
+  {bident : ident; bexpr : expr}
 
 and branch =
   {pattern : pattern; expr : expr}
 
-and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Bcons | Band | Bor
+and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor | Bcons
 
-and uident = string
 
-and lident = string
+and ident = string
 
 
 type typ =
@@ -91,10 +86,10 @@ and tvar = {id : int; mutable def : typ option}
 
 
 type typfunctions =
-  {flidents : lident list; instancelist : typinstance list; typlist : typ list;typ : typ; matching : (motif list * expr)list}
+  {flidents : ident list; instancelist : typinstance list; typlist : typ list;typ : typ; matching : (motif list * expr)list}
 
 and typinstance =
-  {typinstancelist : typinstance list; typlist : typ list; matching : (lident * motif list * expr) list}
+  {typinstancelist : typinstance list; typlist : typ list; matching : (ident * motif list * expr) list}
 
 and motif =
   | Mconst of constant
@@ -230,9 +225,11 @@ let rec typexpr env expr = match expr with
     | Bequals | Bnotequals -> let t = typexpr env e1 in if List.mem t [Int;String;Boolean] then (if typexpr env e2 <> t then badtype e2 else Boolean) else badtype e1
     | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Boolean
     | Bplus | Bminus | Btimes | Bdivide -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Int
+    | Bor | Band -> if typexpr env e1 <> Boolean then badtype e1 else if typexpr env e2 <> Boolean then badtype e2 else Boolean
+    | Bcons -> if typexpr env e1 <> String then badtype e1 else if typexpr env e2 <> String then badtype e2 else String
   )
   | Eatom a -> (match a with
-    | Alident s | Auident s -> find s env
+    | Aident s -> find s env
     | Aconstant c -> (match c with
       | Cbool _ -> Boolean
       | Cint _ -> Int
@@ -243,13 +240,17 @@ let rec typexpr env expr = match expr with
   )
   | Eif (e1,e2,e3) -> if typexpr env e1 <> Boolean then badtype e1 else let t = typexpr env e2 in if typexpr env e3 <> t then badtype e3 else t
   | Edo elist -> (List.iter (fun e -> if typexpr env e <> Effect Unit then badtype e else ()) elist;Effect Unit)
-  | Elet (blist,e) -> failwith "j'ai pas compris"
+  | Elet (blist,e) ->
+    let rec aux env l = match l with
+      | b::q -> let t = typexpr env b.bexpr in aux (add_gen b.bident t env)
+      | [] -> env in
+    typexpr (aux env blist) e
   | _ -> failwith "Pas implémenté"
 
 
 
 
 let ex =
-  {imports = Import;decls = [Dclass("C",[],[{dlident = "foo"; lidentlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
+  {imports = Import;decls = [Dclass("C",[],[{dident = "foo"; identlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Aident("String"))}])]}
 
 let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cint 1)),Eatom(Aconstant (Cint 2)))
