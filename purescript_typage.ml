@@ -79,7 +79,7 @@ type typ =
   | String
   | Boolean
   | Effect of typ
-  | Tarrow of typ*typ
+  | Tarrow of typ list*typ
   | Tvar of tvar
 
 and tvar = {id : int; mutable def : typ option}
@@ -137,7 +137,7 @@ let rec head t = match t with
 
 let rec canon t = match t with
 | Tvar {id = _; def = Some t2} -> head t2
-| Tarrow (t1,t2) -> Tarrow (canon t1, canon t2)
+| Tarrow (tlist,t2) -> Tarrow (List.map canon tlist, canon t2)
 | _ -> t
 
 exception UnificationFailure of typ * typ
@@ -145,24 +145,29 @@ exception UnificationFailure of typ * typ
 let unification_error t1 t2 = raise (UnificationFailure (canon t1, canon t2))
 
 
+let rec grosor l = match l with
+  | [] -> false
+  | x::q -> x || grosor q
+
+
 let rec occur tv t = match head t with
   | Tvar tv2 -> V.equal tv tv2
-  | Tarrow (t1,t2) -> occur tv t1 || occur tv t2
+  | Tarrow (tlist,t2) -> grosor (List.map (occur tv) tlist) || occur tv t2
   | _ -> false
 
 
 
 
-let rec unify t1 t2 = match head t1, head t2 with
+(*let rec unify t1 t2 = match head t1, head t2 with
   | Unit,Unit | Int,Int | String,String | Boolean,Boolean -> ()
   | Effect t1,Effect t2 -> unify t1 t2
-  | Tarrow (a1,a2),Tarrow(b1,b2) -> unify a1 b1;unify a2 b2
+  | Tarrow (a1,a2),Tarrow(b1,b2) -> failwith "voyons si unify est utile avant de se casser la tete"
   | Tvar tv1,Tvar tv2 when V.equal tv1 tv2 -> ()
   | Tvar tv,tau -> if occur tv tau
     then unification_error t1 t2
     else tv.def <- Some t2
   | _,Tvar _ -> unify t2 t1
-  | _ -> unification_error t1 t2
+  | _ -> unification_error t1 t2*)
 
 
 module Vset = Set.Make(V)
@@ -171,12 +176,11 @@ module Vset = Set.Make(V)
 let rec fvars t = match head t with
   | Unit | Int | String | Boolean -> Vset.empty
   | Effect t -> fvars t
-  | Tarrow (t1,t2) -> Vset.union (fvars t1) (fvars t2)
+  | Tarrow (tlist,t2) -> Vset.union (List.fold_left Vset.union Vset.empty (List.map fvars tlist)) (fvars t2)
   | Tvar tv -> Vset.singleton tv
 
 
 type schema = { vars : Vset.t; typ : typ }
-module Smap = Map.Make(String)
 type env = { bindings : schema Smap.t; fvars : Vset.t }
 
 let empty = 
@@ -209,7 +213,7 @@ let find x env =
     | Tvar x as t -> (try Vmap.find x s with Not_found -> t)
     | Int | String | Unit | Boolean -> t
     | Effect t -> Effect (subst t)
-    | Tarrow (t1, t2) -> Tarrow (subst t1, subst t2)
+    | Tarrow (tlist, t2) -> Tarrow (List.map subst tlist, subst t2)
   in
   subst tx.typ
 
@@ -220,32 +224,62 @@ let badtype e = raise (BadType e)
 let notdefined s = raise (NotDefined s)
 
 
-let rec typexpr env expr = match expr with
+let rec typexpr env envtyps expr = match expr with
   | Ebinop (b,e1,e2) -> (match b with
-    | Bequals | Bnotequals -> let t = typexpr env e1 in if List.mem t [Int;String;Boolean] then (if typexpr env e2 <> t then badtype e2 else Boolean) else badtype e1
-    | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Boolean
-    | Bplus | Bminus | Btimes | Bdivide -> if typexpr env e1 <> Int then badtype e1 else if typexpr env e2 <> Int then badtype e2 else Int
-    | Bor | Band -> if typexpr env e1 <> Boolean then badtype e1 else if typexpr env e2 <> Boolean then badtype e2 else Boolean
-    | Bcons -> if typexpr env e1 <> String then badtype e1 else if typexpr env e2 <> String then badtype e2 else String
+    | Bequals | Bnotequals -> let t = typexpr env envtyps e1 in if List.mem t [Int;String;Boolean] then (if typexpr env envtyps e2 <> t then badtype e2 else Boolean) else badtype e1
+    | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env envtyps e1 <> Int then badtype e1 else if typexpr env envtyps e2 <> Int then badtype e2 else Boolean
+    | Bplus | Bminus | Btimes | Bdivide -> if typexpr env envtyps e1 <> Int then badtype e1 else if typexpr env envtyps e2 <> Int then badtype e2 else Int
+    | Bor | Band -> if typexpr env envtyps e1 <> Boolean then badtype e1 else if typexpr env envtyps e2 <> Boolean then badtype e2 else Boolean
+    | Bcons -> if typexpr env envtyps e1 <> String then badtype e1 else if typexpr env envtyps e2 <> String then badtype e2 else String
   )
-  | Eatom a -> (match a with
-    | Aident s -> find s env
-    | Aconstant c -> (match c with
-      | Cbool _ -> Boolean
-      | Cint _ -> Int
-      | Cstring _ -> String
-    )
-    | Aexpr e -> typexpr env e
-    | _ -> failwith "Pas implémenté"
-  )
-  | Eif (e1,e2,e3) -> if typexpr env e1 <> Boolean then badtype e1 else let t = typexpr env e2 in if typexpr env e3 <> t then badtype e3 else t
-  | Edo elist -> (List.iter (fun e -> if typexpr env e <> Effect Unit then badtype e else ()) elist;Effect Unit)
+  | Eatom a -> typatom env envtyps a
+  | Eif (e1,e2,e3) -> if typexpr env envtyps e1 <> Boolean then badtype e1 else let t = typexpr env envtyps e2 in if typexpr env envtyps e3 <> t then badtype e3 else t
+  | Edo elist -> (List.iter (fun e -> if typexpr env envtyps e <> Effect Unit then badtype e else ()) elist;Effect Unit)
   | Elet (blist,e) ->
-    let rec aux env l = match l with
-      | b::q -> let t = typexpr env b.bexpr in aux (add_gen b.bident t env)
+    let rec aux env envtyps l = match l with
+      | b::q -> let t = typexpr env envtyps b.bexpr in aux (add_gen b.bident t env) envtyps q
       | [] -> env in
-    typexpr (aux env blist) e
+    typexpr (aux env envtyps blist) envtyps e
+  | Ecase (e,blist) -> failwith "plus tard"
+  | Eident (f,alist) -> failwith "les fonctions c pour apres"
+
+and typatom env envtyps a = match a with
+  | Aident s -> find s env
+  | Aconstant c -> typconstant env envtyps c
+  | Aexpr e -> typexpr env envtyps e
   | _ -> failwith "Pas implémenté"
+
+and typconstant env envtyps c = match c with
+  | Cbool _ -> Boolean
+  | Cint _ -> Int
+  | Cstring _ -> String
+
+and ensuretyppattern env envtyps t p = match p with
+  | Ppatarg p -> ensuretyppatarg env envtyps t p
+  | Pmulpatarg _ -> failwith "compliqué ça"
+
+and ensuretyppatarg env envtyps t p = match p with
+  | Pconstant c -> if typconstant env envtyps c <> t then failwith "Mauvais patterne" else env
+  | Pident s -> add s t env
+  | Ppattern p -> ensuretyppattern env envtyps t p
+
+and typpurtyp env envtyps pt = match pt with
+  | Patype a -> typatype env envtyps a
+  | Pntype n -> failwith "compliqué"
+
+and typatype env envtyps a = match a with
+  | Apurtype p -> typpurtyp env envtyps p
+  | Aident s -> Smap.find s envtyps
+
+and typtdecl env envtyps td =
+  Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
+
+and typdfn env envtyps df =
+  let conflit s _ _ = failwith "conflit dans les patternes" in
+  let rec aux envi ptlist tlist = match ptlist,tlist with
+    | [],[] -> envi
+    | pt::q1,t::q2 -> Smap.union conflit (ensuretyppattern env envtyps t pt)
+  
 
 
 
@@ -253,4 +287,8 @@ let rec typexpr env expr = match expr with
 let ex =
   {imports = Import;decls = [Dclass("C",[],[{dident = "foo"; identlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Aident("String"))}])]}
 
-let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cint 1)),Eatom(Aconstant (Cint 2)))
+let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cint 2)))
+
+let ex2 = Eif(Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cstring "yes")),Eatom(Aconstant (Cint 1)))
+
+let t = typexpr empty Smap.empty exsimple
