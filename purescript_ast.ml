@@ -62,7 +62,7 @@ and expr =
   | Ecase of expr * branch list
 
 and binding =
-  {ident : ident; expr : expr}
+  {ident : ident; bindexpr : expr}
 
 and branch =
   {pattern : pattern; expr : expr}
@@ -119,7 +119,7 @@ and print_expr fmt e = match e with
   | Ecase (e,b) -> fprintf fmt "case %a of {@[<hov>%a@]}" print_expr e  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@") print_branch) b
 
 and print_bindings fmt b =
-  fprintf fmt "%s = %a" b.ident print_expr b.expr
+  fprintf fmt "%s = %a" b.ident print_expr b.bindexpr
 
 and print_branch fmt b =
   fprintf fmt "%a -> %a" print_pattern b.pattern print_expr b.expr

@@ -1,3 +1,5 @@
+open Purescript_ast
+(*
 type file =
   {imports : imports; decls : decl list}
 
@@ -71,7 +73,7 @@ and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminu
 
 
 and ident = string
-
+*)
 
 type typ =
   | Unit
@@ -248,10 +250,13 @@ let rec typexpr env envtyps expr = match expr with
   | Edo elist -> (List.iter (fun e -> if typexpr env envtyps e <> Effect Unit then badtype e else ()) elist;Effect Unit)
   | Elet (blist,e) ->
     let rec aux env envtyps l = match l with
-      | b::q -> let t = typexpr env envtyps b.bexpr in aux (add_gen b.bident t env) envtyps q
+      | b::q -> let t = typexpr env envtyps b.expr in aux (add_gen b.ident t env) envtyps q
       | [] -> env in
     typexpr (aux env envtyps blist) envtyps e
-  | Ecase (e,blist) -> failwith "plus tard"
+  | Ecase (e,blist) -> let t = typexpr env envtyps e in (match blist with
+    | [] -> failwith "Pattern vide"
+    | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q; t'
+  )
   | Eident (f,alist) -> match Smap.find f !envfonctions with
     | Tarrow(tlist,t) -> let rec aux tlist alist = (match tlist,alist with
       | [],[] -> ()
@@ -265,12 +270,16 @@ and typatom env envtyps a = match a with
   | Aident s -> find s env
   | Aconstant c -> typconstant env envtyps c
   | Aexpr e -> typexpr env envtyps e
-  | _ -> failwith "Pas implémenté"
+  | Aexprtype (e,p) -> let t = typexpr env envtyps e in if t <> typpurtyp env envtyps p then badtype e else t
 
 and typconstant env envtyps c = match c with
   | Cbool _ -> Boolean
   | Cint _ -> Int
   | Cstring _ -> String
+
+and typbranch env envtyps t b =
+  let env = ensuretyppattern env envtyps t b.pattern in
+  typexpr env envtyps b.expr
 
 and ensuretyppattern env envtyps t p = match p with
   | Ppatarg p -> ensuretyppatarg env envtyps t p
@@ -287,7 +296,7 @@ and typpurtyp env envtyps pt = match pt with
 
 and typatype env envtyps a = match a with
   | Apurtype p -> typpurtyp env envtyps p
-  | Aident s -> Smap.find s envtyps
+  | Aident s -> fst(Smap.find s envtyps)
 
 and typtdecl env envtyps td =
   Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
@@ -315,7 +324,7 @@ and typdecl env envtyps d = match d with
 
 and typfile f =
   let env = empty in
-  let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean"],[Int;String;Unit;Boolean])) in
+  let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean"],[(Int,0);(String,0);(Unit,0);(Boolean,0)])) in
   List.iter (typdecl env envtyps) f.decls
 
 
