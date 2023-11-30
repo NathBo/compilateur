@@ -6,4 +6,5 @@ _build/*
 *.cmx
 *.cmi
 *.o
+*.exe
 
