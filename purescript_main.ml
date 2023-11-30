@@ -52,7 +52,6 @@ let () =
 			 La fonction Lexer.token est utilisée par Parser.prog pour obtenir
 			 le prochain token. *)
 		let p = Purescript_parser.file Purescript_lexer.next_token buf in
-		ignore p;
 		close_in f;
 
 		(* On s'arrête ici si on ne veut faire que le parsing *)
