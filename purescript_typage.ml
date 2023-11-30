@@ -1,6 +1,6 @@
 open Purescript_ast
-(*
-type file =
+
+(*type file =
   {imports : imports; decls : decl list}
 
 and imports = Import
@@ -64,7 +64,7 @@ and expr =
   | Ecase of expr * branch list
 
 and binding =
-  {bident : ident; bexpr : expr}
+  {ident : ident; bindexpr : expr}
 
 and branch =
   {pattern : pattern; expr : expr}
@@ -80,7 +80,7 @@ type typ =
   | Int
   | String
   | Boolean
-  | Effect of typ
+  | Tcustom of string * typ list
   | Tarrow of typ list*typ
   | Tvar of tvar
 
@@ -177,7 +177,7 @@ module Vset = Set.Make(V)
 
 let rec fvars t = match head t with
   | Unit | Int | String | Boolean -> Vset.empty
-  | Effect t -> fvars t
+  | Tcustom (_,tlist) -> List.fold_left Vset.union Vset.empty (List.map fvars tlist)
   | Tarrow (tlist,t2) -> Vset.union (List.fold_left Vset.union Vset.empty (List.map fvars tlist)) (fvars t2)
   | Tvar tv -> Vset.singleton tv
 
@@ -214,7 +214,7 @@ let find x env =
   let rec subst t = match head t with
     | Tvar x as t -> (try Vmap.find x s with Not_found -> t)
     | Int | String | Unit | Boolean -> t
-    | Effect t -> Effect (subst t)
+    | Tcustom (s,tlist) -> Tcustom(s,List.map subst tlist)
     | Tarrow (tlist, t2) -> Tarrow (List.map subst tlist, subst t2)
   in
   subst tx.typ
@@ -247,10 +247,10 @@ let rec typexpr env envtyps expr = match expr with
   )
   | Eatom a -> typatom env envtyps a
   | Eif (e1,e2,e3) -> if typexpr env envtyps e1 <> Boolean then badtype e1 else let t = typexpr env envtyps e2 in if typexpr env envtyps e3 <> t then badtype e3 else t
-  | Edo elist -> (List.iter (fun e -> if typexpr env envtyps e <> Effect Unit then badtype e else ()) elist;Effect Unit)
+  | Edo elist -> (List.iter (fun e -> if typexpr env envtyps e <> Tcustom ("Effect",[Unit]) then badtype e else ()) elist;Tcustom ("Effect",[Unit]))
   | Elet (blist,e) ->
     let rec aux env envtyps l = match l with
-      | b::q -> let t = typexpr env envtyps b.expr in aux (add_gen b.ident t env) envtyps q
+      | b::q -> let t = typexpr env envtyps b.bindexpr in aux (add_gen b.ident t env) envtyps q
       | [] -> env in
     typexpr (aux env envtyps blist) envtyps e
   | Ecase (e,blist) -> let t = typexpr env envtyps e in (match blist with
@@ -296,7 +296,7 @@ and typpurtyp env envtyps pt = match pt with
 
 and typatype env envtyps a = match a with
   | Apurtype p -> typpurtyp env envtyps p
-  | Aident s -> fst(Smap.find s envtyps)
+  | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
 
 and typtdecl env envtyps td =
   Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
@@ -324,7 +324,7 @@ and typdecl env envtyps d = match d with
 
 and typfile f =
   let env = empty in
-  let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean"],[(Int,0);(String,0);(Unit,0);(Boolean,0)])) in
+  let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
   List.iter (typdecl env envtyps) f.decls
 
 
