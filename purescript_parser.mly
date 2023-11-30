@@ -92,14 +92,20 @@ tdecl:
 	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT e=purtype f=list(pairArrowPurType)
 			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
 *)
-	| a=LIDENT
-		{ {dident=a; identlist=[]; ntypelist=[]; purtypelist=[]; purtype=Patype (Aident "a") } }
 	(*
 	| a=LIDENT DOUBLE_COLON c=purtype d=list(pairArrowType)	{ genereDecl a [] c d }
 	| a=LIDENT DOUBLE_COLON FORALL b=nonempty_list(LIDENT) DOT c=purtype d=list(pairArrowType)	{ genereDecl a b c d }
 	*)
+	| a=LIDENT DOUBLE_COLON (*c=list(pairNtypeArrow) d=tdeclEnd*)
+		{ {dident=a; identlist=[]; ntypelist=[]; purtypelist=[]; purtype=Patype (Aident "a") } }
 
 ;
+(*
+pairNtypeArrow:
+	| n=ntype DOUBLE_ARROW {n}
+;
+tdeclEnd:
+	| a=list( pairTypeArrow)  *)
 (* for tdecl *)
 
 (*pairArrowType:
@@ -164,7 +170,7 @@ expr:
 	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
 ;
 binding:
-	| l=LIDENT EQUAL e=expr { {ident=l;expr=e} }
+	| l=LIDENT EQUAL e=expr { {ident=l;bindexpr=e} }
 ;
 branch:
 	| p=pattern ARROW e=expr { {pattern=p ; expr=e} } 

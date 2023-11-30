@@ -58,7 +58,7 @@ let () =
 		(* On s'arrête ici si on ne veut faire que le parsing *)
 		if !parse_only then exit 0;
 		Purescript_ast.print_file Format.std_formatter p;
-		Purescript_typage.typfile p
+		(* Purescript_typage.typfile p *)
 
 	with
 		| Purescript_lexer.Lexing_error c ->
