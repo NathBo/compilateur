@@ -71,4 +71,9 @@ let () =
 		| Purescript_typage.BadType e -> (* TODO afficher e et afficher le numero de ligne *)
 			eprintf "Erreur typage (bad type)@.";
 			exit 1
+		| Purescript_typage.NotDefined e -> (* TODO afficher e et afficher le numero de ligne *)
+			eprintf "Erreur typage (not defined)@.";
+			exit 1
+
+
 			
