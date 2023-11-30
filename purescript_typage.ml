@@ -87,6 +87,9 @@ type typ =
 and tvar = {id : int; mutable def : typ option}
 
 
+
+
+
 type typfunctions =
   {flidents : ident list; instancelist : typinstance list; typlist : typ list;typ : typ; matching : (motif list * expr)list}
 
@@ -141,6 +144,16 @@ let rec canon t = match t with
 | Tvar {id = _; def = Some t2} -> head t2
 | Tarrow (tlist,t2) -> Tarrow (List.map canon tlist, canon t2)
 | _ -> t
+
+let rec print_typ t = match canon t with
+  | Int -> print_string "Int\n"
+  | String -> print_string "String\n"
+  | Unit -> print_string "Unit\n"
+  | Boolean -> print_string "Boolean\n"
+  | Tarrow (tlist,t) -> print_string "(";List.iter print_typ tlist; print_string ") -> ";print_typ t;print_string "\n"
+  | Tcustom (s,tlist) -> print_string s;print_string " of (";List.iter print_typ tlist;print_string ")\n"
+  | Tvar {id = id; def = None} -> print_int id;print_string " polymorphe\n"
+  | _ -> failwith "Non"
 
 exception UnificationFailure of typ * typ
 
@@ -234,7 +247,7 @@ let rec smapaddlist env l = match l with
 
 
 
-let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],[Tarrow([Boolean],Boolean);Tarrow([Int;Int],Int);Tarrow([String],Unit)]))
+let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],[Tarrow([Boolean],Boolean);Tarrow([Int;Int],Int);Tarrow([String],Tcustom("Effect",[Unit]))]))
 
 
 let rec typexpr env envtyps expr = match expr with
@@ -292,13 +305,22 @@ and ensuretyppatarg env envtyps t p = match p with
 
 and typpurtyp env envtyps pt = match pt with
   | Patype a -> typatype env envtyps a
-  | Pntype n -> failwith "compliqué"
+  | Pntype n -> typntype env envtyps n
+
+and typntype env envtyps n =
+  let t,arite = Smap.find n.nident envtyps in
+  if List.length n.atypes <> arite
+  then failwith "pas la bonne arité"
+  else match t with
+    | Tcustom (s,_) -> Tcustom(s,List.map (typatype env envtyps) n.atypes)
+    | _ -> t
 
 and typatype env envtyps a = match a with
   | Apurtype p -> typpurtyp env envtyps p
   | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
 
 and typtdecl env envtyps td =
+  print_typ (typpurtyp env envtyps td.purtype);
   Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
 
 and typdfn env envtyps df tlist t =
@@ -306,11 +328,13 @@ and typdfn env envtyps df tlist t =
   let rec aux envi ptlist tlist = match ptlist,tlist with
     | [],[] -> envi
     | pt::q1,t::q2 -> let a = ensuretyppatarg env envtyps t pt in
-    {bindings = Smap.union conflit a.bindings envi.bindings; fvars = Vset.union a.fvars envi.fvars}
-    | _ -> failwith "Pattern pas compatible" in
+    let env = aux envi q1 q2 in
+    {bindings = Smap.union conflit a.bindings env.bindings; fvars = Vset.union a.fvars env.fvars}
+    | _ -> failwith "Pas le bon nombre d'argument" in
   let env = aux empty df.patargs tlist in
+  print_string (df.ident^"\n");List.iter print_typ tlist;print_typ t;print_int (List.length df.patargs);
   if typexpr env envtyps df.expr<>t
-  then badtype df.expr
+  then failwith "pas le type censé etre renvoyé"
   else ()
   
 and typdecl env envtyps d = match d with
@@ -343,7 +367,6 @@ let exfile = {imports = Import; decls =
     Ddefn{ident = "main";patargs = [];expr = Eident("log",[Aconstant(Cstring "")])}
   ]}
 
-let() = typfile exfile
 
 
 
