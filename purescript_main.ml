@@ -52,7 +52,6 @@ let () =
 			 La fonction Lexer.token est utilisée par Parser.prog pour obtenir
 			 le prochain token. *)
 		let p = Purescript_parser.file Purescript_lexer.next_token buf in
-		ignore p;
 		close_in f;
 
 		(* On s'arrête ici si on ne veut faire que le parsing *)
@@ -62,14 +61,19 @@ let () =
 
 	with
 		| Purescript_lexer.Lexing_error c ->
-	(* Erreur lexicale. On récupère sa position absolue et
-		 on la convertit en numéro de ligne *)
-	localisation (Lexing.lexeme_start_p buf);
-	eprintf "Erreur lexicale: %s@." c;
-	exit 1
+			localisation (Lexing.lexeme_start_p buf);
+			eprintf "Erreur lexicale: %s@." c;
+			exit 1
 		| Purescript_parser.Error | Purescript_ast.Parsing_error ->
-	(* Erreur syntaxique. On récupère sa position absolue et on la
-		 convertit en numéro de ligne *)
-	localisation (Lexing.lexeme_start_p buf);
-	eprintf "Erreur syntaxique@.";
-	exit 1
+			localisation (Lexing.lexeme_start_p buf);
+			eprintf "Erreur syntaxique@.";
+			exit 1
+		| Purescript_typage.BadType e -> (* TODO afficher e et afficher le numero de ligne *)
+			eprintf "Erreur typage (bad type)@.";
+			exit 1
+		| Purescript_typage.NotDefined e -> (* TODO afficher e et afficher le numero de ligne *)
+			eprintf "Erreur typage (not defined)@.";
+			exit 1
+
+
+			

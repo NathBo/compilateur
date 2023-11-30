@@ -4,5 +4,5 @@ import Effect
 import Effect.Console
 
 
-f:: a -> a
+f:: a => a
 
