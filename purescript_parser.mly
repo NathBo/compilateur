@@ -1,36 +1,9 @@
 %{
 	open Purescript_ast
-	
-(*	let genereDecl a b c d =
-		let lst=(DOUBLE_ARROW,c)::d in
-		let rec recupereFin = function
-			| [] -> raise Parsing_error
-			| [(ARROW,a)] -> [],a
-			| (ARROW,t)::l -> let a,b = recupereFin l in t::a,b
-			| (DOUBLE_ARROW,_)::_ -> raise Parsing_error
-			| _ -> raise Parsing_error
-		in
-		let toNtype = function
-			| Pntype a -> a
-			| Patype (Alident _ ) | Patype (Apurtype _ ) -> Printf.printf "error 1\n";raise Parsing_error
 
-			| Patype (Auident a) -> {uident=a; atypes=[]}
-		in
-		let rec splitList = function
-			| [] -> raise Parsing_error
-			| [(_,t)] -> [],[],t
-			| (ARROW,t)::l ->
-				let (f1,f2) = recupereFin l in
-				[],t::f1,f2
-			| (DOUBLE_ARROW,t1)::(DOUBLE_ARROW,t2)::l ->
-					let t1' = toNtype t1 in let a,b,c = splitList ((DOUBLE_ARROW,t2)::l) in t1'::a,b,c
-			| (DOUBLE_ARROW,t1)::(ARROW,t2)::l -> let fin1,fin2 = recupereFin ((ARROW,t2)::l) in [],t1::fin1,fin2
-			| _ -> raise Parsing_error
-		in
-		Printf.printf "go split\n";		
-		let x,y,z = splitList lst in Printf.printf "split fini\n";
-			{dlident=a; lidentlist=b; ntypelist=x; purtypelist=y; purtype=z}
-*)
+	let triplet1 (a,b,c) = a
+	let triplet2 (a,b,c) = b
+	let triplet3 (a,b,c) = c
 
 %}
 
@@ -78,40 +51,21 @@ defn:
 ;
 
 tdecl:
-	(*| a=LIDENT DOUBLE_COLON d=list(pairNtypeArrow) e=purtype f=list(pairArrowPurType)
-			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
-	
-	| a=LIDENT DOUBLE_COLON e=purtype f=list(pairArrowPurType)
-			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} } *)
-	
-
-
-(*	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT b=UIDENT c=list(atype) d=list(pairArrowNtype) DOUBLE_ARROW e=purtype f=list(pairArrowPurType)
-			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
-	
-	| a=LIDENT DOUBLE_COLON FORALL x=nonempty_list(LIDENT) DOT e=purtype f=list(pairArrowPurType)
-			{ {dlident=a; lidentlist=[]; ntypelist=[]; purtypelist=[]; purtype=e} }
-*)
-	(*
-	| a=LIDENT DOUBLE_COLON c=purtype d=list(pairArrowType)	{ genereDecl a [] c d }
-	| a=LIDENT DOUBLE_COLON FORALL b=nonempty_list(LIDENT) DOT c=purtype d=list(pairArrowType)	{ genereDecl a b c d }
-	*)
-	| a=LIDENT DOUBLE_COLON (*c=list(pairNtypeArrow) d=tdeclEnd*)
-		{ {dident=a; identlist=[]; ntypelist=[]; purtypelist=[]; purtype=Patype (Aident "a") } }
-
+	| a=LIDENT DOUBLE_COLON b=pairNtypeArrow
+		{ {dident=a; identlist=[]; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b) } }
+	| a=LIDENT DOUBLE_COLON FORALL c=list(LIDENT) DOT b=pairNtypeArrow
+		{ {dident=a; identlist=c; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b) } }
 ;
-(*
+
 pairNtypeArrow:
-	| n=ntype DOUBLE_ARROW {n}
+	| a=ntype DOUBLE_ARROW b=pairNtypeArrow{ a::(triplet1 b),(triplet2 b),(triplet3 b) }
+	| b=tdeclEnd { [],(fst b),(snd b) }
 ;
 tdeclEnd:
-	| a=list( pairTypeArrow)  *)
-(* for tdecl *)
+	| a=purtype ARROW b=tdeclEnd { a::(fst b),(snd b) }
+	| a=purtype { [],a }
+;
 
-(*pairArrowType:
-	| ARROW t=purtype { (ARROW,t) }
-	| DOUBLE_ARROW t=purtype { (DOUBLE_ARROW,t) }
-*)
 ntype:
 	| u=UIDENT a=list(atype) { {nident = u ; atypes = a} } 
 ;
@@ -124,7 +78,7 @@ atype:
 	| u=UIDENT { Aident u}
 	| LEFT_PAR t=purtype RIGHT_PAR { Apurtype t }
 ;
-purtype:  (* TODO : un uident peut être vu comme un atype ou un ntype, j'ai fait un choix aleatoire *)
+purtype:  (* un uident peut être vu comme un atype ou un ntype, j'ai choisi atype *)
 	| a=atype {Patype a}
 	| n=ntypeMany {Pntype n}
 ;
