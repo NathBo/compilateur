@@ -83,6 +83,7 @@ type typ =
   | Tcustom of string * typ list
   | Tarrow of typ list*typ
   | Tvar of tvar
+  | Tgeneral of string
 
 and tvar = {id : int; mutable def : typ option}
 
@@ -153,6 +154,7 @@ let rec print_typ t = match canon t with
   | Tarrow (tlist,t) -> print_string "(";List.iter print_typ tlist; print_string ") -> ";print_typ t;print_string "\n"
   | Tcustom (s,tlist) -> print_string s;print_string " of (";List.iter print_typ tlist;print_string ")\n"
   | Tvar {id = id; def = None} -> print_int id;print_string " polymorphe\n"
+  | Tgeneral s -> print_endline s
   | _ -> failwith "Non"
 
 exception UnificationFailure of typ * typ
@@ -193,6 +195,7 @@ let rec fvars t = match head t with
   | Tcustom (_,tlist) -> List.fold_left Vset.union Vset.empty (List.map fvars tlist)
   | Tarrow (tlist,t2) -> Vset.union (List.fold_left Vset.union Vset.empty (List.map fvars tlist)) (fvars t2)
   | Tvar tv -> Vset.singleton tv
+  | Tgeneral s -> Vset.empty
 
 
 type schema = { vars : Vset.t; typ : typ }
@@ -229,6 +232,7 @@ let find x env =
     | Int | String | Unit | Boolean -> t
     | Tcustom (s,tlist) -> Tcustom(s,List.map subst tlist)
     | Tarrow (tlist, t2) -> Tarrow (List.map subst tlist, subst t2)
+    | Tgeneral s -> Tgeneral s
   in
   subst tx.typ
 
@@ -247,7 +251,12 @@ let rec smapaddlist env l = match l with
 
 
 
-let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],[Tarrow([Boolean],Boolean);Tarrow([Int;Int],Int);Tarrow([String],Tcustom("Effect",[Unit]))]))
+let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],
+[
+  (Tarrow([Boolean],Boolean),Smap.empty);
+  (Tarrow([Int;Int],Int),Smap.empty);
+  (Tarrow([String],Tcustom("Effect",[Unit])),Smap.empty)
+]))
 
 
 let rec typexpr env envtyps expr = match expr with
@@ -270,11 +279,11 @@ let rec typexpr env envtyps expr = match expr with
     | [] -> failwith "Pattern vide"
     | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q; t'
   )
-  | Eident (f,alist) -> match Smap.find f !envfonctions with
+  | Eident (f,alist) -> match fst(Smap.find f !envfonctions) with
     | Tarrow(tlist,t) -> let rec aux tlist alist = (match tlist,alist with
       | [],[] -> ()
       | t::q1,a::q2 -> if typatom env envtyps a <> t then failwith "mauvais argument de fonction" else aux q1 q2
-      | _ -> failwith "pas possible") in aux tlist alist;t
+      | _ -> failwith ("la fonction "^f^" ne prend pas autant d'arguments")) in aux tlist alist;t
     | _ -> failwith "pas possible"
 
 
@@ -320,26 +329,35 @@ and typatype env envtyps a = match a with
   | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
 
 and typtdecl env envtyps td =
+  let rec aux envtyps l = match l with
+    | [] -> envtyps
+    | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
+  let envvartyps = aux Smap.empty td.identlist in
+  let conflit s _ _ = failwith "conflit dans les patternes" in
+  let envtyps = Smap.union conflit envtyps envvartyps in
   print_typ (typpurtyp env envtyps td.purtype);
-  Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype)
+  Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype),envvartyps
 
 and typdfn env envtyps df tlist t =
+  let patarglist = df.patargs in
   let conflit s _ _ = failwith "conflit dans les patternes" in
   let rec aux envi ptlist tlist = match ptlist,tlist with
     | [],[] -> envi
     | pt::q1,t::q2 -> let a = ensuretyppatarg env envtyps t pt in
     let env = aux envi q1 q2 in
     {bindings = Smap.union conflit a.bindings env.bindings; fvars = Vset.union a.fvars env.fvars}
-    | _ -> failwith "Pas le bon nombre d'argument" in
-  let env = aux empty df.patargs tlist in
+    | _ -> failwith "Pas le bon nombre d'arguments" in
+  let env = aux empty patarglist tlist in
+  let conflit s _ _ = (failwith ("conflit dans les forall avec "^s)) in
+  let envtyps = Smap.union conflit envtyps (snd (Smap.find df.ident !envfonctions)) in
   print_string (df.ident^"\n");List.iter print_typ tlist;print_typ t;print_int (List.length df.patargs);
   if typexpr env envtyps df.expr<>t
   then failwith "pas le type censé etre renvoyé"
   else ()
   
 and typdecl env envtyps d = match d with
-  | Dtdecl td -> let t = typtdecl env !envtyps td in envfonctions := Smap.add td.dident t !envfonctions
-  | Ddefn df -> (match Smap.find df.ident !envfonctions with
+  | Dtdecl td -> let f = typtdecl env !envtyps td in envfonctions := Smap.add td.dident f !envfonctions
+  | Ddefn df -> (match fst(Smap.find df.ident !envfonctions) with
     | Tarrow(tlist,t) -> typdfn env !envtyps df tlist t
     | _ -> failwith "pas possible")
   | _ -> failwith "pas implémenté"

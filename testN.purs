@@ -3,7 +3,6 @@ import Prelude
 import Effect
 import Effect.Console
 
-f:: Int -> String
-f x = "a"
-main :: Effect Unit
-main = log "hello"
+
+f:: forall a b. a -> b -> b
+f x y = x
