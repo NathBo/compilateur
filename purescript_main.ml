@@ -61,14 +61,14 @@ let () =
 
 	with
 		| Purescript_lexer.Lexing_error c ->
-	(* Erreur lexicale. On récupère sa position absolue et
-		 on la convertit en numéro de ligne *)
-	localisation (Lexing.lexeme_start_p buf);
-	eprintf "Erreur lexicale: %s@." c;
-	exit 1
+			localisation (Lexing.lexeme_start_p buf);
+			eprintf "Erreur lexicale: %s@." c;
+			exit 1
 		| Purescript_parser.Error | Purescript_ast.Parsing_error ->
-	(* Erreur syntaxique. On récupère sa position absolue et on la
-		 convertit en numéro de ligne *)
-	localisation (Lexing.lexeme_start_p buf);
-	eprintf "Erreur syntaxique@.";
-	exit 1
+			localisation (Lexing.lexeme_start_p buf);
+			eprintf "Erreur syntaxique@.";
+			exit 1
+		| Purescript_typage.BadType e -> (* TODO afficher e et afficher le numero de ligne *)
+			eprintf "Erreur typage (bad type)@.";
+			exit 1
+			
