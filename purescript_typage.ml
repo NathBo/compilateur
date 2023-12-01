@@ -87,7 +87,7 @@ type typ =
 
 and tvar = {id : int; mutable def : typ option}
 
-
+and constructor = {cident : string; ctlist : typ list; ctyp : typ}
 
 
 
@@ -108,9 +108,8 @@ and typclass =
 
 module Smap = Map.Make(String)
 
-type envtyps = typ Smap.t
 
-let globalenvtyps = Smap.empty
+let (envconstructors:(constructor Smap.t ref)) = ref Smap.empty
 
 
 
@@ -208,16 +207,19 @@ let empty =
 }
 
 let add s t envi = 
-  {bindings = Smap.add s {vars = Vset.empty; typ = t} envi.bindings;fvars = Vset.union envi.fvars (fvars t)}
+  if s = "_" then envi
+  else {bindings = Smap.add s {vars = Vset.empty; typ = t} envi.bindings;fvars = Vset.union envi.fvars (fvars t)}
 
 
 let grossunion s =
   Vset.fold (fun v s -> Vset.union (fvars (Tvar v)) s) s Vset.empty
 
 let add_gen s t envi =
-  let vt = fvars t in
-  let bindings = { vars = Vset.diff vt (grossunion envi.fvars); typ = t } in
-  {bindings = Smap.add s bindings envi.bindings; fvars = envi.fvars}
+  if s = "_" then envi
+  else
+    let vt = fvars t in
+    let bindings = { vars = Vset.diff vt (grossunion envi.fvars); typ = t } in
+    {bindings = Smap.add s bindings envi.bindings; fvars = envi.fvars}
 
 module Vmap = Map.Make(V)
 

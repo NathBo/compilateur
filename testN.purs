@@ -5,7 +5,7 @@ import Effect.Console
 
 
 
-f:: forall a b. a -> b -> String
-f x y = "yes"
+f:: Int -> Int -> Int
+f _ _ = 42
 main :: Effect Unit
-main = log (f 1 true)
+main = log ""
