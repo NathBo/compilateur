@@ -6,6 +6,5 @@ import Effect.Console
 
 
 
-f:: Int -> Int
-f x = 1
-
+main :: Int
+main = let log = 1 in log "Hello"

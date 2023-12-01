@@ -238,6 +238,9 @@ let find x env =
   in
   subst tx.typ
 
+let mem x env =
+  Smap.mem x env.bindings
+
 exception BadType of expr
 exception NotDefined of string
 
@@ -300,7 +303,8 @@ let rec typexpr env envtyps expr = match expr with
     | [] -> failwith "Pattern vide"
     | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q; t'
   )
-  | Elident (f,alist) -> (match fst(Smap.find f !envfonctions) with
+  | Elident (f,alist) -> if mem f env then failwith (f^" n'est pas une fonction")
+  else(match fst(Smap.find f !envfonctions) with
     | Tarrow(tlist,t) -> let dejapris = ref Smap.empty in
       let rec aux tlist alist = (match tlist,alist with
       | [],[] -> ()
