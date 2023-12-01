@@ -36,7 +36,8 @@ and instance =
 
 and patarg =
   | Pconstant of constant
-  | Pident of ident
+  | Plident of ident
+  | Puident of ident
   | Ppattern of pattern
 
 and pattern =
@@ -271,6 +272,8 @@ let rec substitute dejapris t = match head t with
   | Tcustom (s,tlist) -> Tcustom (s,List.map (substitute dejapris) tlist)
   | _ -> t
 
+let lastdefined = ref ""
+
 
 let rec alldifferent l = match l with
   | [] -> true
@@ -339,11 +342,22 @@ and typbranch env envtyps t b =
 
 and ensuretyppattern env envtyps t p = match p with
   | Ppatarg p -> ensuretyppatarg env envtyps t p
-  | Pmulpatarg _ -> failwith "compliqué ça"
+  | Pmulpatarg (s,plist) -> let constr = Smap.find s !envconstructors in
+    if constr.ctyp <> t
+    then failwith (s^"n'est pas un constructeur du bon type")
+    else let rec aux envi plist tlist = match plist,tlist with
+      | [],[] -> envi
+      | p::q1,t::q2 -> aux (ensuretyppatarg env envtyps t p) q1 q2
+      | _ -> failwith ("pas la bonne taille de pattern dans l'utilisation du constructeur "^constr.cident) in
+    aux env plist constr.ctlist
+      
+
+
 
 and ensuretyppatarg env envtyps t p = match p with
   | Pconstant c -> if typconstant env envtyps c <> t then failwith "Mauvais patterne" else env
-  | Pident s -> add s t env
+  | Plident s -> add s t env
+  | Puident s -> if (Smap.find s !envconstructors).ctyp <> t then failwith (s^" n'est pas un constructeur du bon type") else env
   | Ppattern p -> ensuretyppattern env envtyps t p
 
 and typpurtyp env envtyps pt = match pt with

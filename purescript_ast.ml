@@ -34,7 +34,8 @@ and instance =
 
 and patarg =
   | Pconstant of constant
-  | Pident of ident
+  | Plident of ident
+  | Puident of ident
   | Ppattern of pattern
 
 and pattern =
@@ -128,7 +129,7 @@ and print_branch fmt b =
 
 and print_patarg fmt p =match p with
   | Pconstant c -> fprintf fmt "%a" print_constant c
-  | Pident s -> fprintf fmt "%s" s
+  | Plident s | Puident s -> fprintf fmt "%s" s
   | Ppattern p -> fprintf fmt "%a" print_pattern p
 
 and print_pattern fmt p = match p with

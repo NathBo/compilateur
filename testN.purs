@@ -5,11 +5,11 @@ import Effect.Console
 
 
 
-data T = A | B
+data T = A Int | B Int
 
-main::T -> Effect Unit
-main x = case x of A -> log "yes"
-                   B -> log "no"
+main::T -> Int
+main x = case x of A x -> x
+                   B  y -> z
 
 
 

@@ -89,8 +89,8 @@ instance:
 ;
 patarg:
 	| c=constant { Pconstant c }
-	| l=LIDENT { Pident l }
-	| u=UIDENT { Pident u }
+	| l=LIDENT { Plident l }
+	| u=UIDENT { Puident u }
 	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
 ;
 pattern:
