@@ -377,7 +377,9 @@ and typatype env envtyps a = match a with
   | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
 
 and typtdecl env envtyps td =
-  if not (alldifferent td.identlist)
+  if Smap.mem td.dident !envfonctions
+    then failwith (td.dident^" est définie 2 fois")
+else if not (alldifferent td.identlist)
     then failwith ("toutes les variables de types ne sont pas differentes dans l'appel de "^td.dident)
 else
   let rec aux envtyps l = match l with
@@ -387,9 +389,13 @@ else
   let conflit s _ _ = failwith "conflit dans les patternes" in
   let envtyps = Smap.union conflit envtyps envvartyps in
   print_typ (typpurtyp env envtyps td.purtype);
+  lastdefined := td.dident;
   Tarrow(List.map (typpurtyp env envtyps) td.purtypelist,typpurtyp env envtyps td.purtype),envvartyps
 
-and typdfn env envtyps df tlist t =
+and typdfn env envtyps (df:defn) tlist t =
+  if Smap.mem df.ident !envfonctions && !lastdefined <> df.ident
+  then failwith (df.ident^" est définie 2 fois")
+else
   let patarglist = df.patargs in
   let conflit s _ _ = failwith ("l'ident "^s^" est utilisé plusieurs fois") in
   let rec aux envi ptlist tlist = match ptlist,tlist with
@@ -426,14 +432,18 @@ else
   aux2 ialist;
   envtyps := Smap.add s (t,0) !envtyps
 
+and checkforenddef () =
+  if !lastdefined <> ""
+  then lastdefined := ""
+
 
   
 and typdecl env envtyps d = match d with
-  | Dtdecl td -> let f = typtdecl env !envtyps td in envfonctions := Smap.add td.dident f !envfonctions
+  | Dtdecl td -> checkforenddef ();let f = typtdecl env !envtyps td in envfonctions := Smap.add td.dident f !envfonctions
   | Ddefn df -> (match fst(Smap.find df.ident !envfonctions) with
     | Tarrow(tlist,t) -> typdfn env !envtyps df tlist t
     | _ -> failwith "pas possible")
-  | Ddata (s,slist,ialist) -> typdata env envtyps s slist ialist
+  | Ddata (s,slist,ialist) -> checkforenddef ();typdata env envtyps s slist ialist
   | _ -> failwith "pas implémenté"
 
 
@@ -441,7 +451,8 @@ and typdecl env envtyps d = match d with
 and typfile f =
   let env = empty in
   let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
-  List.iter (typdecl env envtyps) f.decls
+  List.iter (typdecl env envtyps) f.decls;
+  if not (Smap.mem "main" !envfonctions) then failwith "Pas de fonction main définie" else ()
 
 
 

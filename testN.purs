@@ -5,11 +5,7 @@ import Effect.Console
 
 
 
-data T = A Int | B Int
 
-main::T -> Int
-main x = case x of A x -> x
-                   B  y -> z
-
-
+f:: Int -> Int
+f x = 1
 
