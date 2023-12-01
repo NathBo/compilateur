@@ -105,8 +105,8 @@ constant:
 ;
 atom :
 	| c=constant { Aconstant c }
-	| l=LIDENT { Aident l}
-	| u=UIDENT { Aident u}
+	| l=LIDENT { Alident l}
+	| u=UIDENT { Auident u}
 	| LEFT_PAR e=expr RIGHT_PAR { Aexpr e }
 	| LEFT_PAR e=expr DOUBLE_COLON t=purtype RIGHT_PAR { Aexprtype (e,t) }
 
@@ -116,8 +116,8 @@ expr:
 	| a=atom { Eatom a }
 	| MINUS e=expr { Ebinop(Binf,Eatom(Aconstant(Cint 0)),e) }
 	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
-	| lid=LIDENT atm=nonempty_list(atom) { Eident (lid,atm) }
-	| uid=UIDENT atm=nonempty_list(atom) { Eident (uid,atm) }
+	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
+	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
 	| IF e1=expr THEN e2=expr ELSE e3=expr { Eif (e1,e2,e3) }
 	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
 	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }

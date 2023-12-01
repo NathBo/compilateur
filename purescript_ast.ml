@@ -48,14 +48,16 @@ and constant =
 
 and atom =
   | Aconstant of constant
-  | Aident of ident
+  | Alident of ident
+  | Auident of ident
   | Aexpr of expr
   | Aexprtype of expr * purtype
 
 and expr =
   | Eatom of atom
   | Ebinop of binop * expr * expr
-  | Eident of ident * atom list 
+  | Elident of ident * atom list 
+  | Euident of ident * atom list 
   | Eif of expr * expr * expr
   | Edo of expr list
   | Elet of binding list * expr
@@ -105,13 +107,13 @@ let print_ident fmt s =
 
 let rec print_atom fmt a = match a with
   | Aconstant c -> fprintf fmt "%a" print_constant c
-  | Aident l -> fprintf fmt "%s" l
+  | Alident l | Auident l -> fprintf fmt "%s" l
   | Aexpr e -> fprintf fmt "%a" print_expr e
   | Aexprtype (e,t) -> fprintf fmt "%a :: %a" print_expr e print_purtype t
 
 and print_expr fmt e = match e with
   | Ebinop (b,e1,e2) -> fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
-  | Eident (s,a) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
+  | Elident (s,a) | Euident (s,a) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_atom) a
   | Eif (e1,e2,e3) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3
   | Edo e -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
   | Elet (b,e) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e

@@ -1,6 +1,6 @@
 open Purescript_ast
-
-(*type file =
+(*
+type file =
   {imports : imports; decls : decl list}
 
 and imports = Import
@@ -50,14 +50,16 @@ and constant =
 
 and atom =
   | Aconstant of constant
-  | Aident of ident
+  | Alident of ident
+  | Auident of ident
   | Aexpr of expr
   | Aexprtype of expr * purtype
 
 and expr =
   | Eatom of atom
   | Ebinop of binop * expr * expr
-  | Eident of ident * atom list 
+  | Elident of ident * atom list 
+  | Euident of ident * atom list 
   | Eif of expr * expr * expr
   | Edo of expr list
   | Elet of binding list * expr
@@ -87,7 +89,6 @@ type typ =
 
 and tvar = {id : int; mutable def : typ option}
 
-and constructor = {cident : string; ctlist : typ list; ctyp : typ}
 
 
 
@@ -108,8 +109,6 @@ and typclass =
 
 module Smap = Map.Make(String)
 
-
-let (envconstructors:(constructor Smap.t ref)) = ref Smap.empty
 
 
 
@@ -245,6 +244,11 @@ let badtype e = raise (BadType e)
 let notdefined s = raise (NotDefined s)
 
 
+type constructor = {cident : string; ctlist : typ list; ctyp : typ; cenvvartyps : (typ*int) Smap.t}
+
+let (envconstructors:(constructor Smap.t ref)) = ref Smap.empty
+
+
 let rec smapaddlist env l = match l with
   | [],[] -> env
   | s::q1,t::q2 -> smapaddlist (Smap.add s t env) (q1,q2)
@@ -293,7 +297,7 @@ let rec typexpr env envtyps expr = match expr with
     | [] -> failwith "Pattern vide"
     | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q; t'
   )
-  | Eident (f,alist) -> match fst(Smap.find f !envfonctions) with
+  | Elident (f,alist) -> (match fst(Smap.find f !envfonctions) with
     | Tarrow(tlist,t) -> let dejapris = ref Smap.empty in
       let rec aux tlist alist = (match tlist,alist with
       | [],[] -> ()
@@ -307,12 +311,14 @@ let rec typexpr env envtyps expr = match expr with
         | _ -> if typatom env envtyps a <> t then failwith ("mauvais argument de fonction pour "^f) else aux q1 q2)
       | _ -> failwith ("la fonction "^f^" ne prend pas autant d'arguments")) in
       aux tlist alist; substitute !dejapris t
-    | _ -> failwith "pas possible"
+    | _ -> failwith "pas possible")
+  | Euident (constr,alist) -> print_endline "g été reconnu";failwith "plus tard"
 
 
 
 and typatom env envtyps a = match a with
-  | Aident s -> find s env
+  | Alident s -> find s env
+  | Auident s -> (Smap.find s !envconstructors).ctyp
   | Aconstant c -> typconstant env envtyps c
   | Aexpr e -> typexpr env envtyps e
   | Aexprtype (e,p) -> let t = typexpr env envtyps e in if t <> typpurtyp env envtyps p then badtype e else t
@@ -380,12 +386,29 @@ and typdfn env envtyps df tlist t =
   if typexpr env envtyps df.expr<>t
   then (print_typ (typexpr env envtyps df.expr);failwith ("pas le type censé etre renvoyé par "^df.ident))
   else ()
+
+and typdata env envtyps s slist ialist =
+  let rec aux envtyps l = match l with
+    | [] -> envtyps
+    | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
+  let conflit s _ _ = (failwith ("conflit dans les forall avec "^s)) in
+  let envvartyps = aux Smap.empty slist in
+  let t = Tcustom (s,[]) in
+  let envtypsact = Smap.union conflit envvartyps !envtyps in
+  let rec aux2 l = match l with
+    | [] -> ()
+    | (i,alist)::q -> envconstructors := Smap.add i {cident = i; ctlist = List.map (typatype env envtypsact) alist; ctyp = t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
+  aux2 ialist;
+  envtyps := Smap.add s (t,0) !envtyps
+
+
   
 and typdecl env envtyps d = match d with
   | Dtdecl td -> let f = typtdecl env !envtyps td in envfonctions := Smap.add td.dident f !envfonctions
   | Ddefn df -> (match fst(Smap.find df.ident !envfonctions) with
     | Tarrow(tlist,t) -> typdfn env !envtyps df tlist t
     | _ -> failwith "pas possible")
+  | Ddata (s,slist,ialist) -> typdata env envtyps s slist ialist
   | _ -> failwith "pas implémenté"
 
 
@@ -397,19 +420,6 @@ and typfile f =
 
 
 
-
-let ex =
-  {imports = Import;decls = [Dclass("C",[],[{dident = "foo"; identlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Aident("String"))}])]}
-
-let exsimple = Ebinop(Bplus,Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cint 2)))
-
-let ex2 = Eif(Eatom(Aconstant (Cbool true)),Eatom(Aconstant (Cstring "yes")),Eatom(Aconstant (Cint 1)))
-
-let exfile = {imports = Import; decls = 
-  [
-    Dtdecl{dident = "main";identlist = [];ntypelist = [];purtypelist = [];purtype = Patype(Aident "Unit")};
-    Ddefn{ident = "main";patargs = [];expr = Eident("log",[Aconstant(Cstring "")])}
-  ]}
 
 
 
