@@ -4,5 +4,8 @@ import Effect
 import Effect.Console
 
 
-f:: forall a b. a -> b -> b
-f x y = x
+
+f:: forall a b. a -> b -> String
+f x y = "yes"
+main :: Effect Unit
+main = log (f 1 true)

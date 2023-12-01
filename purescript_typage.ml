@@ -251,12 +251,24 @@ let rec smapaddlist env l = match l with
 
 
 
-let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log"],
+let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log";"pure"],
 [
   (Tarrow([Boolean],Boolean),Smap.empty);
   (Tarrow([Int;Int],Int),Smap.empty);
-  (Tarrow([String],Tcustom("Effect",[Unit])),Smap.empty)
+  (Tarrow([String],Tcustom("Effect",[Unit])),Smap.empty);
+  (Tarrow([Tgeneral "a"],Tcustom("Effect",[Tgeneral "a"])),Smap.add "a" ((Tgeneral "a"),0) Smap.empty)
 ]))
+
+
+let rec substitute dejapris t = match head t with
+  | Tgeneral s -> Smap.find s dejapris
+  | Tcustom (s,tlist) -> Tcustom (s,List.map (substitute dejapris) tlist)
+  | _ -> t
+
+
+let rec alldifferent l = match l with
+  | [] -> true
+  | x::q -> not (List.mem x q) && alldifferent q
 
 
 let rec typexpr env envtyps expr = match expr with
@@ -280,10 +292,19 @@ let rec typexpr env envtyps expr = match expr with
     | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q; t'
   )
   | Eident (f,alist) -> match fst(Smap.find f !envfonctions) with
-    | Tarrow(tlist,t) -> let rec aux tlist alist = (match tlist,alist with
+    | Tarrow(tlist,t) -> let dejapris = ref Smap.empty in
+      let rec aux tlist alist = (match tlist,alist with
       | [],[] -> ()
-      | t::q1,a::q2 -> if typatom env envtyps a <> t then failwith "mauvais argument de fonction" else aux q1 q2
-      | _ -> failwith ("la fonction "^f^" ne prend pas autant d'arguments")) in aux tlist alist;t
+      | t::q1,a::q2 -> (match t with
+        | Tgeneral s -> let t' = typatom env envtyps a in
+          (match t' with
+            | Tgeneral _ -> aux q1 q2
+            | _ -> if Smap.mem s !dejapris && t' <> Smap.find s !dejapris
+              then failwith ("types incompatibles entre eux dans l'appel de "^f)
+              else dejapris := Smap.add s t' !dejapris;aux q1 q2)
+        | _ -> if typatom env envtyps a <> t then failwith ("mauvais argument de fonction pour "^f) else aux q1 q2)
+      | _ -> failwith ("la fonction "^f^" ne prend pas autant d'arguments")) in
+      aux tlist alist; substitute !dejapris t
     | _ -> failwith "pas possible"
 
 
@@ -329,6 +350,9 @@ and typatype env envtyps a = match a with
   | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
 
 and typtdecl env envtyps td =
+  if not (alldifferent td.identlist)
+    then failwith ("toutes les variables de types ne sont pas differentes dans l'appel de "^td.dident)
+else
   let rec aux envtyps l = match l with
     | [] -> envtyps
     | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
@@ -352,7 +376,7 @@ and typdfn env envtyps df tlist t =
   let envtyps = Smap.union conflit envtyps (snd (Smap.find df.ident !envfonctions)) in
   print_string (df.ident^"\n");List.iter print_typ tlist;print_typ t;print_int (List.length df.patargs);
   if typexpr env envtyps df.expr<>t
-  then failwith "pas le type censé etre renvoyé"
+  then (print_typ (typexpr env envtyps df.expr);failwith ("pas le type censé etre renvoyé par "^df.ident))
   else ()
   
 and typdecl env envtyps d = match d with
