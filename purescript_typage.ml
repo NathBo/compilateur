@@ -312,7 +312,12 @@ let rec typexpr env envtyps expr = match expr with
       | _ -> failwith ("la fonction "^f^" ne prend pas autant d'arguments")) in
       aux tlist alist; substitute !dejapris t
     | _ -> failwith "pas possible")
-  | Euident (constr,alist) -> print_endline "g été reconnu";failwith "plus tard"
+  | Euident (s,alist) -> let constr = Smap.find s !envconstructors in
+    let rec aux alist tlist = match alist,tlist with
+      | [],[] -> ()
+      | a::q1,t::q2 -> if typatom env envtyps a <> t then failwith ("types pas compatible dans l'utilisation du constructeur "^s) else aux q1 q2
+      | _ -> failwith ("La liste d'atome n'est pas de la bonne longueur dans l'utilisation du constructeur "^s) in
+    aux alist constr.ctlist;constr.ctyp
 
 
 
@@ -372,7 +377,7 @@ else
 
 and typdfn env envtyps df tlist t =
   let patarglist = df.patargs in
-  let conflit s _ _ = failwith "conflit dans les patternes" in
+  let conflit s _ _ = failwith ("l'ident "^s^" est utilisé plusieurs fois") in
   let rec aux envi ptlist tlist = match ptlist,tlist with
     | [],[] -> envi
     | pt::q1,t::q2 -> let a = ensuretyppatarg env envtyps t pt in
@@ -388,6 +393,10 @@ and typdfn env envtyps df tlist t =
   else ()
 
 and typdata env envtyps s slist ialist =
+  if Smap.mem s !envtyps then failwith ("conflit dans la définition du type "^s)
+  else if not (alldifferent slist)
+  then failwith ("toutes les variables de types ne sont pas differentes dans la définition du type "^s)
+else
   let rec aux envtyps l = match l with
     | [] -> envtyps
     | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
@@ -397,7 +406,9 @@ and typdata env envtyps s slist ialist =
   let envtypsact = Smap.union conflit envvartyps !envtyps in
   let rec aux2 l = match l with
     | [] -> ()
-    | (i,alist)::q -> envconstructors := Smap.add i {cident = i; ctlist = List.map (typatype env envtypsact) alist; ctyp = t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
+    | (i,alist)::q -> if Smap.mem i !envconstructors
+      then failwith ("Le constructeur "^i^" est défini plusieurs fois")
+      else envconstructors := Smap.add i {cident = i; ctlist = List.map (typatype env envtypsact) alist; ctyp = t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
   aux2 ialist;
   envtyps := Smap.add s (t,0) !envtyps
 
