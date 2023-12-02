@@ -278,6 +278,14 @@ let rec substitute dejapris t = match head t with
 let lastdefined = ref ""
 
 
+let (deflist:defn list ref) = ref []
+
+let print_smap sm =
+  let rec aux s sch =
+    print_endline s;print_typ sch.typ in
+  Smap.iter aux sm
+
+
 let rec alldifferent l = match l with
   | [] -> true
   | x::q -> not (List.mem x q) && alldifferent q
@@ -341,7 +349,7 @@ and typconstant env envtyps c = match c with
   | Cstring _ -> String
 
 and typbranch env envtyps t b =
-  let env = ensuretyppattern env envtyps t b.pattern in
+  let env = ensuretyppattern empty envtyps t b.pattern in
   typexpr env envtyps b.expr
 
 and ensuretyppattern env envtyps t p = match p with
@@ -351,7 +359,10 @@ and ensuretyppattern env envtyps t p = match p with
     then failwith (s^"n'est pas un constructeur du bon type")
     else let rec aux envi plist tlist = match plist,tlist with
       | [],[] -> envi
-      | p::q1,t::q2 -> aux (ensuretyppatarg env envtyps t p) q1 q2
+      | p::q1,t::q2 -> let a = ensuretyppatarg env envtyps t p in
+        let conflit s _ _ = failwith ("l'ident "^s^" est utilisé plusieurs fois") in
+        let env = aux envi q1 q2 in
+        {bindings = Smap.union conflit a.bindings env.bindings; fvars = Vset.union a.fvars env.fvars}
       | _ -> failwith ("pas la bonne taille de pattern dans l'utilisation du constructeur "^constr.cident) in
     aux env plist constr.ctlist
       
@@ -378,7 +389,7 @@ and typntype env envtyps n =
 
 and typatype env envtyps a = match a with
   | Apurtype p -> typpurtyp env envtyps p
-  | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un tyoe d'arite 0"
+  | Aident s -> let t,arite = Smap.find s envtyps in if arite = 0 then t else failwith "devrait etre un type d'arite 0"
 
 and typtdecl env envtyps td =
   if Smap.mem td.dident !envfonctions
@@ -406,6 +417,7 @@ else
     | [],[] -> envi
     | pt::q1,t::q2 -> let a = ensuretyppatarg env envtyps t pt in
     let env = aux envi q1 q2 in
+    print_smap a.bindings;
     {bindings = Smap.union conflit a.bindings env.bindings; fvars = Vset.union a.fvars env.fvars}
     | _ -> failwith "Pas le bon nombre d'arguments" in
   let env = aux empty patarglist tlist in

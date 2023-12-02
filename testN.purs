@@ -6,5 +6,8 @@ import Effect.Console
 
 
 
-main :: Int
-main = let log = 1 in log "Hello"
+data T = C Int Int
+f:: T -> T -> Int
+f (C x y) (C y z) = x
+main :: Effect Unit
+main = log ""
