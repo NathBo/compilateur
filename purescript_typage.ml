@@ -321,7 +321,7 @@ let rec typexpr env envtyps expr = match expr with
   | Ecase (e,blist) -> let t = typexpr env envtyps e in (match blist with
     | [] -> failwith "Pattern vide"
     | b::q -> let t' = typbranch env envtyps t b in List.iter (fun x-> if typbranch env envtyps t x <> t' then failwith "bad pattern type" else ()) q;
-    if not (checkexaustive env envtyps t (List.map (fun b -> b.pattern) blist)) then failwith "Pattern non exhaustif" else t'
+    if not (checkexaustivelist env envtyps [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then failwith "Pattern non exhaustif" else t'
   )
   | Elident (f,alist) -> if mem f env then failwith (f^" n'est pas une fonction")
   else(match fst(Smap.find f !envfonctions) with
@@ -409,8 +409,38 @@ and checkexaustive env envtyps t plist =
     | Tcustom (s,[]) -> grosand (List.map (fun (_,constr) -> (not (constr.ctyp = t) || contientconstr constr.cident plist)) (smaptolist !envconstructors) )
     | _ -> false
 
-
-
+and checkexaustivelist env envtyps tlist plistlist =
+  let rec isaident p = match p with
+    | Ppatarg (Plident _) -> true
+    | Ppatarg (Ppattern p) -> isaident p
+    | _ -> false in
+  let rec isabool b p = match p with
+    | Ppatarg (Pconstant (Cbool x)) when x = b -> true
+    | Ppatarg (Ppattern p) -> isabool b p
+    | _ -> false in
+  let rec isaconstr c p = match p with
+    | Ppatarg (Puident s) when s = c -> true
+    | Pmulpatarg (s,_) when s = c -> true
+    | Ppatarg (Ppattern p) -> isaconstr c p
+    | _ -> false in
+  let rec contientidentlist f i l = match l with
+    | [] -> []
+    | x::q when f (List.nth x i) -> x::contientidentlist f i q
+    | _::q -> contientidentlist f i q in
+  let rec getthelists l = match l with
+    | [] -> []
+    | (Pmulpatarg (_,x)::_)::q -> (List.map (fun t -> Ppatarg t) x)::getthelists q
+    | (Ppatarg(Puident _)::_)::q -> getthelists q
+    | _ -> failwith "bah alors mais d'ou ca arrive ca" in
+  let rec aux i l =
+    if l = [] then false
+    else if i>=List.length tlist
+    then true
+    else (match List.nth tlist i with
+      | Boolean -> aux (i+1) (contientidentlist isaident i l) || (aux (i+1) (contientidentlist (isabool true) i l)&&aux (i+1) (contientidentlist (isabool false) i l))
+      | Tcustom (s,[]) -> grosand (List.map (fun (_,constr) -> not (constr.ctyp = List.nth tlist i) || (aux (i+1) (contientidentlist (isaconstr constr.cident) i l)) && checkexaustivelist env envtyps constr.ctlist (getthelists (contientidentlist (isaconstr constr.cident) i l))) (smaptolist !envconstructors))
+      | _ -> aux (i+1) (contientidentlist isaident i l)) in
+  List.length tlist = 0 || aux 0 plistlist
 
 
 and typpurtyp env envtyps pt = match pt with
@@ -503,11 +533,12 @@ and checkforenddef envtyps =
   then ()
   else begin let conflit s _ _ = (failwith ("conflit dans les forall avec "^s)) in
   let envtyps = Smap.union conflit envtyps (snd (Smap.find !lastdefined !envfonctions)) in
+  print_int (List.length !deflist);
     match !deflist with
       | [] -> failwith ("La déclaration de "^(!lastdefined)^" doit être suivie de sa définition");
       | x::q -> let posdufiltrage = getchanging false 0 x.patargs in print_string "On filtre en ";print_int posdufiltrage;
         if posdufiltrage = -1
-        then (if List.length !deflist >1 then failwith (!lastdefined^" est définie 2 fois") else ())
+        then (if List.length !deflist >1 then failwith (!lastdefined^" est définie 2 fois") else lastdefined := ""; deflist := [])
         else(match fst(Smap.find !lastdefined !envfonctions) with
       | Tarrow(tlist,t) -> if not (checkexaustive empty envtyps (List.nth tlist posdufiltrage) (List.map (aux posdufiltrage) !deflist)) then failwith ("Patterne non exhaustif dans la definition de "^(!lastdefined));
       lastdefined := ""; deflist := []
