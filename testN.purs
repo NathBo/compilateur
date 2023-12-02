@@ -5,9 +5,7 @@ import Effect.Console
 
 
 
-
-data T = C Int Int
-f:: T -> T -> Int
-f (C x y) (C y z) = x
+log:: Int -> Int
+log x = x
 main :: Effect Unit
-main = log ""
+main = log "hello"

@@ -83,9 +83,9 @@ let string_of_bool b =
   else "false"
 
 let print_constant fmt c = match c with
-  | Cbool b -> fprintf fmt "%s" (string_of_bool b)
-  | Cint n -> fprintf fmt "%d" n
-  | Cstring s -> fprintf fmt "%s" s
+  | Cbool b -> fprintf fmt "boolean %s" (string_of_bool b)
+  | Cint n -> fprintf fmt "int %d" n
+  | Cstring s -> fprintf fmt "string %s" s
 
 let print_binop fmt b = match b with
   | Bdivide -> fprintf fmt "/"
