@@ -120,6 +120,7 @@ and string = parse
 		{ Buffer.add_char string_buffer c; string lexbuf }
 and string_ignore = parse
 	| "\\" {string lexbuf}
+	| '\n' { new_line lexbuf; string_ignore lexbuf }
 	| _ {string_ignore lexbuf}
 	| eof
 		{ raise (Lexing_error "unterminated string") }
@@ -147,34 +148,17 @@ and string_ignore = parse
 				let nxtT = next_token_pair lb in
 				let rec add (t,c) mode = begin
 					match t with
-					(*| DO ->	addQueue (close c mode) ;
-								addQueue [DO;LEFT_BLOCK] ;
-								let (t',c') = next_token_pair lb in
-								addQueue (close c' mode); 
-								Stack.push (c',DO) stack;
-								add (t',c') false *)
 					| WHERE | LET | OF | DO ->	
-							(*	let (t',c') = next_token_pair lb in
-								if t=OF then
-									addQueue (unstack_until CASE);
-								addQueue (close c mode) ;
-								addQueue (close c' mode);    (* quel mode ? mode ou true *)
-								if t=LET then 
-									Stack.push (c,LET) stack;
-								addQueue [t;LEFT_BLOCK] ;
-								Stack.push (c',t') stack;
-								add (t',c') false *)
-
-								addQueue (close c mode) ;
-								if t=OF then
-									addQueue (unstack_until CASE);
-								let (t',c') = next_token_pair lb in
-								addQueue (close c' mode);    (* quel mode ? mode ou true *)
-								if t=LET then 
-									Stack.push (c,LET) stack;
-								addQueue [t;LEFT_BLOCK] ;
-								Stack.push (c',t') stack;
-								add (t',c') false
+						addQueue (close c mode) ;
+						if t=OF then
+							addQueue (unstack_until CASE);
+						let (t',c') = next_token_pair lb in
+						addQueue (close c' mode);    (* quel mode ? mode ou true *)
+						if t=LET then 
+							Stack.push (c,LET) stack;
+						addQueue [t;LEFT_BLOCK] ;
+						Stack.push (c',t') stack;
+						add (t',c') false
 
 
 					| RIGHT_PAR | THEN | ELSE | IN ->

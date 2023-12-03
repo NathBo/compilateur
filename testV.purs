@@ -3,6 +3,5 @@ import Prelude
 import Effect
 import Effect.Console
 
-
-f:: a -> a
-
+main = log "hello \
+  \world" forall + false

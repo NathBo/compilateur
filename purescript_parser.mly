@@ -114,7 +114,7 @@ atom :
 
 expr:
 	| a=atom { Eatom a }
-	| MINUS e=expr { Ebinop(Binf,Eatom(Aconstant(Cint 0)),e) }
+	| MINUS e=expr { Ebinop(Bminus,Eatom(Aconstant(Cint 0)),e) }
 	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
 	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
 	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
