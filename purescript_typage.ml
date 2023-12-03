@@ -261,13 +261,7 @@ let rec smapaddlist env l = match l with
 
 
 
-let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log";"pure"],
-[
-  (Tarrow([Boolean],Boolean),Smap.empty);
-  (Tarrow([Int;Int],Int),Smap.empty);
-  (Tarrow([String],Tcustom("Effect",[Unit])),Smap.empty);
-  (Tarrow([Tgeneral "a"],Tcustom("Effect",[Tgeneral "a"])),Smap.add "a" ((Tgeneral "a"),0) Smap.empty)
-]))
+
 
 
 let rec substitute dejapris t = match head t with
@@ -286,6 +280,18 @@ let smaptolist sm =
   Smap.fold aux sm []
 
   
+let envfonctions = ref (smapaddlist Smap.empty (["not";"mod";"log";"pure"],
+[
+(Tarrow([Boolean],Boolean),Smap.empty);
+(Tarrow([Int;Int],Int),Smap.empty);
+  (Tarrow([String],Tcustom("Effect",[Unit])),Smap.empty);
+  (Tarrow([Tgeneral "a"],Tcustom("Effect",[Tgeneral "a"])),Smap.add "a" ((Tgeneral "a"),0) Smap.empty)
+]))
+
+
+
+let (envclasses : ((typ*int)Smap.t*(typ Smap.t))Smap.t ref) = ref Smap.empty
+
 
 let print_smap sm =
   let rec aux s sch =
@@ -431,6 +437,7 @@ and checkexaustivelist env envtyps tlist plistlist =
     | [] -> []
     | (Pmulpatarg (_,x)::_)::q -> (List.map (fun t -> Ppatarg t) x)::getthelists q
     | (Ppatarg(Puident _)::_)::q -> getthelists q
+    | (Ppatarg(Ppattern p)::a)::q -> getthelists ((p::a)::q)
     | _ -> failwith "bah alors mais d'ou ca arrive ca" in
   let rec aux i l =
     if l = [] then false
@@ -438,7 +445,7 @@ and checkexaustivelist env envtyps tlist plistlist =
     then true
     else (match List.nth tlist i with
       | Boolean -> aux (i+1) (contientidentlist isaident i l) || (aux (i+1) (contientidentlist (isabool true) i l)&&aux (i+1) (contientidentlist (isabool false) i l))
-      | Tcustom (s,[]) -> grosand (List.map (fun (_,constr) -> not (constr.ctyp = List.nth tlist i) || (aux (i+1) (contientidentlist (isaconstr constr.cident) i l)) && checkexaustivelist env envtyps constr.ctlist (getthelists (contientidentlist (isaconstr constr.cident) i l))) (smaptolist !envconstructors))
+      | Tcustom (s,[]) -> aux (i+1) (contientidentlist isaident i l) || grosand (List.map (fun (_,constr) -> not (constr.ctyp = List.nth tlist i) || (aux (i+1) (contientidentlist (isaconstr constr.cident) i l)) && checkexaustivelist env envtyps constr.ctlist (getthelists (contientidentlist (isaconstr constr.cident) i l))) (smaptolist !envconstructors))
       | _ -> aux (i+1) (contientidentlist isaident i l)) in
   List.length tlist = 0 || aux 0 plistlist
 
@@ -519,7 +526,7 @@ else
 
 and checkforenddef envtyps =
   let rec isanident p = match p with
-    | Plident _ -> true
+    | Plident s -> true
     | Ppattern (Ppatarg p ) -> isanident p
     | _ -> false in
   let rec getchanging dejatrouve i l = match l with
@@ -534,16 +541,32 @@ and checkforenddef envtyps =
   else begin let conflit s _ _ = (failwith ("conflit dans les forall avec "^s)) in
   let envtyps = Smap.union conflit envtyps (snd (Smap.find !lastdefined !envfonctions)) in
   print_int (List.length !deflist);
+  deflist := List.rev !deflist;
     match !deflist with
       | [] -> failwith ("La déclaration de "^(!lastdefined)^" doit être suivie de sa définition");
       | x::q -> let posdufiltrage = getchanging false 0 x.patargs in print_string "On filtre en ";print_int posdufiltrage;
         if posdufiltrage = -1
         then (if List.length !deflist >1 then failwith (!lastdefined^" est définie 2 fois") else lastdefined := ""; deflist := [])
         else(match fst(Smap.find !lastdefined !envfonctions) with
-      | Tarrow(tlist,t) -> if not (checkexaustive empty envtyps (List.nth tlist posdufiltrage) (List.map (aux posdufiltrage) !deflist)) then failwith ("Patterne non exhaustif dans la definition de "^(!lastdefined));
+      | Tarrow(tlist,t) -> if not (checkexaustivelist empty envtyps [(List.nth tlist posdufiltrage)] (List.map (fun x -> [x]) (List.map (aux posdufiltrage) !deflist))) then failwith ("Patterne non exhaustif dans la definition de "^(!lastdefined));
       lastdefined := ""; deflist := []
       | _ -> failwith "pas possible")
   end
+
+
+and typclass env envtyps s slist tdlist =
+  if Smap.mem s !envclasses
+    then failwith ("La classe "^s^" est définie 2 fois");
+  let rec aux envtyps l = match l with
+    | [] -> envtyps
+    | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
+  let envvartyps = aux Smap.empty slist in
+  let (classenvfonctions : typ Smap.t ref) = ref Smap.empty in
+  List.iter (fun td -> let f = typtdecl env envtyps td in lastdefined := "";deflist := [];classenvfonctions := Smap.add td.dident (fst f) !classenvfonctions;envfonctions := Smap.add td.dident f !envfonctions)
+      (List.map (fun {dident = dident; identlist = identlist; ntypelist = ntypelist;purtypelist = purtypelist;purtype = purtype} -> {dident = dident; identlist = slist; ntypelist = ntypelist;purtypelist = purtypelist;purtype = purtype}) tdlist);
+  envclasses := Smap.add s (envvartyps,!classenvfonctions) !envclasses
+
+
   
 and typdecl env envtyps d = match d with
   | Dtdecl td -> checkforenddef !envtyps;let f = typtdecl env !envtyps td in envfonctions := Smap.add td.dident f !envfonctions
@@ -551,7 +574,10 @@ and typdecl env envtyps d = match d with
     | Tarrow(tlist,t) -> typdfn env !envtyps df tlist t
     | _ -> failwith "pas possible")
   | Ddata (s,slist,ialist) -> checkforenddef !envtyps;typdata env envtyps s slist ialist
+  | Dclass (s,slist,tdlist) -> checkforenddef !envtyps;typclass env !envtyps s slist tdlist
   | _ -> failwith "pas implémenté"
+
+
 
 
 
