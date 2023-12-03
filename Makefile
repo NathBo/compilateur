@@ -1,7 +1,7 @@
 V: purescript_main.exe
-	dune exec ./purescript_main.exe testV.purs
+	@dune exec ./purescript_main.exe testV.purs
 N: purescript_main.exe
-	dune exec ./purescript_main.exe testN.purs
+	@dune exec ./purescript_main.exe testN.purs
 
 
 tests1: purescript_main.exe
