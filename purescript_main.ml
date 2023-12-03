@@ -79,7 +79,7 @@ let () =
 			eprintf "%s" (colorRed^"Erreur lexicale : "^colorDefault^c^"\n");
 			localisation buf; 
 			exit 1
-		| Purescript_parser.Error | Purescript_ast.Parsing_error ->
+		| Purescript_parser.Error ->
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			localisation buf;
 			exit 1

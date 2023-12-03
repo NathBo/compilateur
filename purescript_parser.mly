@@ -109,7 +109,6 @@ atom :
 	| u=UIDENT { Auident u}
 	| LEFT_PAR e=expr RIGHT_PAR { Aexpr e }
 	| LEFT_PAR e=expr DOUBLE_COLON t=purtype RIGHT_PAR { Aexprtype (e,t) }
-
 ;
 
 expr:

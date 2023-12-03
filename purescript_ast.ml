@@ -189,8 +189,3 @@ let ex =
 let() = printf "e = @[%a@]@." print_file ex
 *)
 
-(* pour le parseur *)
-exception Parsing_error
-
-
-
