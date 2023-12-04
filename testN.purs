@@ -4,12 +4,11 @@ import Effect
 import Effect.Console
 
 
-class C a b where
-	f::String
-instance C a b where
-	f = "a"
-instance C Int String where
-	f = "b"
-
+class A a where
+  foo:: a -> String
+class B b where
+  bar:: b -> String
+instance A a => B Int where
+  bar x = foo x
 main :: Effect Unit
 main = log "ok"

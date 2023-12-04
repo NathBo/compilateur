@@ -85,7 +85,7 @@ let () =
 			localisation buf;
 			exit 1
 		| Purescript_typage.TypingError s -> (* TODO afficher e et afficher le numero de ligne *)
-			eprintf "%s\n" (colorRed ^ "Erreur typage "^s ^ colorDefault);
+			eprintf "%s\n" (colorRed ^ "Erreur typage : "^s ^ colorDefault);
 			exit 1
 
 
