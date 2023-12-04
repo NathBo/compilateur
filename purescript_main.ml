@@ -72,7 +72,8 @@ let () =
 		if !parse_only then exit 0;
 		
 		Purescript_ast.print_file Format.std_formatter p;
-		Purescript_typage.typfile p 
+		Purescript_typage.typfile p;
+		exit 0
 
 	with
 		| Purescript_lexer.Lexing_error c ->
@@ -83,12 +84,10 @@ let () =
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			localisation buf;
 			exit 1
-		| Purescript_typage.BadType e -> (* TODO afficher e et afficher le numero de ligne *)
-			eprintf "%s\n" (colorRed ^ "Erreur typage (bad type)" ^ colorDefault);
+		| Purescript_typage.TypingError s -> (* TODO afficher e et afficher le numero de ligne *)
+			eprintf "%s\n" (colorRed ^ "Erreur typage "^s ^ colorDefault);
 			exit 1
-		| Purescript_typage.NotDefined e -> (* TODO afficher e et afficher le numero de ligne *)
-			eprintf "%s\n" (colorRed ^ "Erreur typage (not defined)" ^ colorDefault);
-			exit 1
+
 
 
 			

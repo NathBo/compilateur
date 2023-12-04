@@ -4,10 +4,12 @@ import Effect
 import Effect.Console
 
 
-foo::Int -> String
-foo _ = "hello"
-class C where
-  foo:: Int -> String
-main :: Effect Unit
-main = log ""
+class C a b where
+	f::String
+instance C a b where
+	f = "a"
+instance C Int String where
+	f = "b"
 
+main :: Effect Unit
+main = log "ok"
