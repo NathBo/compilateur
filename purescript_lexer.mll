@@ -60,6 +60,7 @@ let space = ' ' | '\t'
 rule next_tokens = parse
 	| '\n' { new_line lexbuf; next_tokens lexbuf }
 	| commentInline | space  { next_tokens lexbuf }
+	| "{-" { commentMany lexbuf }
 	| "module Main where"  { [MODULE,curCol lexbuf -17] }
 	| "import Prelude\nimport Effect\nimport Effect.Console" {new_line lexbuf; new_line lexbuf ;[IMPORT, curCol lexbuf] }
 	| eof {[EOF,0] }
@@ -122,8 +123,13 @@ and string_ignore = parse
 	| "\\" {string lexbuf}
 	| '\n' { new_line lexbuf; string_ignore lexbuf }
 	| _ {string_ignore lexbuf}
-	| eof
-		{ raise (Lexing_error "unterminated string") }
+	| eof	{ raise (Lexing_error "unterminated string") }
+
+and commentMany = parse
+	| "-}" { next_tokens lexbuf }
+	| "\n" { new_line lexbuf ; commentMany lexbuf }
+	| eof	{ raise (Lexing_error "unterminated comment") }
+	| _ { commentMany lexbuf }
 
 
 {

@@ -3,6 +3,7 @@ open Lexing
 
 (* Option de compilation, pour s'arrêter à l'issue du parser *)
 let parse_only = ref false
+let type_only = ref false
 
 (* Nom du fichier source *)
 let ifile = ref ""
@@ -12,7 +13,10 @@ let set_file f s = f := s
 (* Les options du compilateur que l'on affiche avec --help *)
 let options =
 	["--parse-only", Arg.Set parse_only,
-	 "	Pour ne faire uniquement que la phase d'analyse syntaxique"]
+	 "Pour ne faire que l'analyse syntaxique";
+
+	 "--type-only", Arg.Set type_only,
+	  "Pour ne faire que l'analyse syntaxique puis le typage"]
 
 let usage = "compilateur de purscript"
 (* définition des couleurs pour l'affichage *)
@@ -68,21 +72,26 @@ let () =
 	try
 		let p = Purescript_parser.file Purescript_lexer.next_token buf in
 		close_in f;
+		Purescript_ast.print_file Format.std_formatter p;
 
 		if !parse_only then exit 0;
 		
-		Purescript_ast.print_file Format.std_formatter p;
 		Purescript_typage.typfile p;
+		
+		if !type_only then exit 0;
+
+		(* ajouter ici la production de code assembleur *)
+
 		exit 0
 
 	with
 		| Purescript_lexer.Lexing_error c ->
-			eprintf "%s" (colorRed^"Erreur lexicale : "^colorDefault^c^"\n");
 			localisation buf; 
+			eprintf "%s" (colorRed^"Erreur lexicale : "^colorDefault^c^"\n");
 			exit 1
 		| Purescript_parser.Error ->
-			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			localisation buf;
+			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
 		| Purescript_typage.TypingError s -> (* TODO afficher e et afficher le numero de ligne *)
 			eprintf "%s\n" (colorRed ^ "Erreur typage : "^s ^ colorDefault);
