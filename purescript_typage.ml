@@ -406,7 +406,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
             | _ -> if Smap.mem s !dejapris && t' <> smapfind s !dejapris
               then typingerror ("types incompatibles entre eux dans l'appel de "^f)
               else dejapris := Smap.add s t' !dejapris;aux q1 q2)
-        | _ -> if typatom env envtyps envinstances general a <> t then typingerror ("mauvais argument de fonction pour "^f) else aux q1 q2)
+        | _ -> if not( unifyable [typatom env envtyps envinstances general a] [t]) then typingerror ("mauvais argument de fonction pour "^f) else aux q1 q2)
       | _ -> typingerror ("la fonction "^f^" ne prend pas autant d'arguments")) in
       aux tlist alist; substitute !dejapris t)
   | Euident (s,alist) -> let constr = smapfind s !envconstructors in
@@ -469,9 +469,9 @@ and typbranch env envtyps envinstances t (general:bool) b =
 and ensuretyppattern env envtyps envinstances t p = match p with
   | Ppatarg p -> ensuretyppatarg env envtyps envinstances t p
   | Pmulpatarg (s,plist) -> let constr = smapfind s !envconstructors in
-    if constr.ctyp <> t
-    then typingerror (s^"n'est pas un constructeur du bon type")
-    else let rec aux envi plist tlist = match plist,tlist with
+    if not (unifyable [t]  [get_typ_constr_multi env envtyps envinstances constr plist t s])
+    then (typingerror (s^" n'est pas un constructeur du bon type"))
+    else print_endline "c koi encore ";print_typ t;print_typ (get_typ_constr_multi env envtyps envinstances constr plist t s);let rec aux envi plist tlist = match plist,tlist with
       | [],[] -> envi
       | p::q1,t::q2 -> let a = ensuretyppatarg env envtyps envinstances t p in
         let conflit s _ _ = typingerror ("l'ident "^s^" est utilisé plusieurs fois") in
@@ -482,10 +482,26 @@ and ensuretyppattern env envtyps envinstances t p = match p with
       
 
 and ensuretyppatarg env envtyps envinstances t p = match p with
-  | Pconstant c -> if typconstant env envtyps envinstances c <> t then typingerror "Mauvais patterne" else env
+  | Pconstant c -> if not (unifyable [typconstant env envtyps envinstances c] [t]) then typingerror "Mauvais patterne" else env
   | Plident s -> add s t env
-  | Puident s -> if (smapfind s !envconstructors).ctyp <> t then typingerror (s^" n'est pas un constructeur du bon type") else env
+  | Puident s -> (match t,(smapfind s !envconstructors).ctyp with
+    | Tcustom(s1,l1),Tcustom(s2,l2) -> if s1<>s2 then typingerror (s^" n'est pas un constructeur du bon type custom") else env
+    | t1,t2 -> if t1<>t2 then (print_endline "devait etre un ";print_typ t;print_endline "et pas un ";print_typ (smapfind s !envconstructors).ctyp;typingerror (s^" n'est pas un constructeur du bon type") )else env)
   | Ppattern p -> ensuretyppattern env envtyps envinstances t p
+
+and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s =
+  let t = constr.ctyp in
+  let t' = typpatarg env envtyps envinstances (List.hd plist) in
+  match tacomp with
+    | Tcustom(s,_::_) -> Tcustom(s,[t'])
+    | _ -> t
+
+and typpatarg env envtyps envinstances p = match p with
+  | Pconstant c -> typconstant env envtyps envinstances c
+  | Plident s -> Tgeneral("a")
+  | _ -> failwith "pas implémenté"
+
+
 
 
 and checkexaustive env envtyps envinstances t plist =
@@ -541,7 +557,7 @@ and checkexaustivelist env envtyps envinstances tlist plistlist =
     then true
     else (match List.nth tlist i with
       | Boolean -> aux (i+1) (contientidentlist isaident i l) || (aux (i+1) (contientidentlist (isabool true) i l)&&aux (i+1) (contientidentlist (isabool false) i l))
-      | Tcustom (s,[]) -> aux (i+1) (contientidentlist isaident i l) || grosand (List.map (fun (_,constr) -> not (constr.ctyp = List.nth tlist i) || (aux (i+1) (contientidentlist (isaconstr constr.cident) i l)) && checkexaustivelist env envtyps envinstances constr.ctlist (getthelists (contientidentlist (isaconstr constr.cident) i l))) (smaptolist !envconstructors))
+      | Tcustom (s,_) -> aux (i+1) (contientidentlist isaident i l) || grosand (List.map (fun (_,constr) -> not (constr.ctyp = List.nth tlist i) || (aux (i+1) (contientidentlist (isaconstr constr.cident) i l)) && checkexaustivelist env envtyps envinstances constr.ctlist (getthelists (contientidentlist (isaconstr constr.cident) i l))) (smaptolist !envconstructors))
       | _ -> aux (i+1) (contientidentlist isaident i l)) in
   List.length tlist = 0 || aux 0 plistlist
 
@@ -610,7 +626,7 @@ and typdata env envtyps envinstances s slist ialist =
   then typingerror ("toutes les variables de types ne sont pas differentes dans la définition du type "^s)
 else
   let t = Tcustom (s,[]) in
-  envtyps := Smap.add s (t,0) !envtyps;
+  envtyps := Smap.add s (t,List.length slist) !envtyps;
   let rec aux envtyps l = match l with
     | [] -> envtyps
     | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
