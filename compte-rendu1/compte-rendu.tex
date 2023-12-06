@@ -1,0 +1,54 @@
+\documentclass[12pt,a4paper,french]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\selectlanguage{french}
+\usepackage[T1]{fontenc}
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+\title{Compilateur purscript : rendu 1}
+
+\begin{document}
+
+\maketitle
+
+\part*{Le lexer}
+Le lexer est codé dans le fichier purscript\_lexer.mll et est compatible avec ocamllex.
+
+La plupart des lexems sont reconnus directement par la règle principale. Il y a quelques cas où l'on utilise une règle différente :
+
+\begin{itemize}
+\item les commentaires sur plusieurs lignes
+\item les chaînes de caracteres
+\item les chaînes de caracteres entre les symboles "$\backslash\backslash$"
+\end{itemize}
+
+
+\part*{Le parser}
+Il est codé dans le fichier purscrip\_parser.mly et est compatible avec menhir.
+
+Il reprend globalement la grammaire proposée pour le purscript. Mais doit gérer quelques cas délicats. \\
+
+Le premier problème vient de la règle :
+\[ \langle\text{tdecl}\rangle ::= \langle \text{lident}\rangle :: (\langle\text{ntype}\rangle =>)\text{* } (\langle\text{type}\rangle ->)\text{* } \langle\text{type}\rangle \]
+
+Dans ce cas, il n'est pas possible de juste reconnaître grâce à la règle suivante :
+\[  \text{list}(\text{ntype}, =>) \text{ list}(\text{type}, ->) \text{ type} \]
+En effet, cela provoque un conflit car le parser ne sait pas quand passer d'une liste à l'autre.
+
+La solution est donc de remplacer par 3 régles qui s'appellent en chaîne et qui permettent de placer nous-même les limites.
+\\
+Le deuxième problème vient de deux dérivations possibles dans la grammaire. En effet, si l'on souhaite reconnaitre on objet de 'type' et que l'on lit un 'uident', alors les deux dérivations suivantes sont possibles:
+\[ \left[ \begin{array}{l}
+	\text{type} \rightarrow \text{atype} \rightarrow \text{uident} \\
+	\text{type} \rightarrow \text{ntype} \rightarrow \text{uident}
+\end{array} \right.
+\]
+Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaitre l'un des deux (en l'occurence le premier).
+
+
+
+
+\end{document}
+
+
