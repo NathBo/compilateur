@@ -4,7 +4,7 @@ ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_pars
 
 V: ppurs
 	@./ppurs testV.purs
-N: purescript_main.exe
+N: ppurs
 	@./ppurs testN.purs
 
 
