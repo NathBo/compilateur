@@ -19,8 +19,8 @@ La plupart des lexems sont reconnus directement par la règle principale. Il y a
 
 \begin{itemize}
 \item les commentaires sur plusieurs lignes
-\item les chaînes de caracteres
-\item les chaînes de caracteres entre les symboles "$\backslash\backslash$"
+\item les chaînes de caractères
+\item les chaînes de caractères entre les symboles "$\backslash\backslash$"
 \end{itemize}
 
 
@@ -36,7 +36,7 @@ Dans ce cas, il n'est pas possible de juste reconnaître grâce à la règle sui
 \[  \text{list}(\text{ntype}, =>) \text{ list}(\text{type}, ->) \text{ type} \]
 En effet, cela provoque un conflit car le parser ne sait pas quand passer d'une liste à l'autre.
 
-La solution est donc de remplacer par 3 régles qui s'appellent en chaîne et qui permettent de placer nous-même les limites.
+La solution est donc de remplacer par 3 règles qui s'appellent en chaîne et qui permettent de placer nous-même les limites.
 \\
 Le deuxième problème vient de deux dérivations possibles dans la grammaire. En effet, si l'on souhaite reconnaitre on objet de 'type' et que l'on lit un 'uident', alors les deux dérivations suivantes sont possibles:
 \[ \left[ \begin{array}{l}
@@ -48,6 +48,14 @@ Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons fo
 
 
 
+
+
+\part*{Makefile / dune / tests}
+Le projet contient également des scripts permettant d'automatiser la compilation et de tester rapidement sur de nombreux tests.
+
+La plupart des tests sont fourni mais nous avons rajouté quelques tests afin de vérifier le comportement sur quelques cas particuliers.
+
+Dune s'occupe de produire le fichier purscript\_main.exe. Et Make s'occupe de lancer dune, de renommer l'exécutable, et de lancer les tests.
 
 \end{document}
 
