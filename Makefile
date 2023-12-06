@@ -1,23 +1,24 @@
-V: purescript_main.exe
-	@dune exec ./purescript_main.exe testV.purs
+ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_parser.mly purescript_typage.ml
+	@dune build
+	@mv purescript_main.exe ppurs
+
+V: ppurs
+	@./ppurs testV.purs
 N: purescript_main.exe
-	@dune exec ./purescript_main.exe testN.purs
+	@./ppurs testN.purs
 
 
-tests1: purescript_main.exe
-	./run-tests.sh -1 ./purescript_main.exe
-tests2: purescript_main.exe
-	./run-tests.sh -2 ./purescript_main.exe
+tests1: ppurs
+	@./run-tests.sh -1 ./ppurs
+tests2: ppurs
+	@./run-tests.sh -2 ./ppurs
 
-testsAll: purescript_main.exe
-	./run-tests.sh -all ./purescript_main.exe
-
-
-explain:
-	menhir --base /tmp/parser --dump --explain purescript_parser.mly
-	cat /tmp/purescript_parser.conflicts
+testsAll: ppurs
+	@./run-tests.sh -all ./ppurs
 
 clean:
-	dune clean
+	@dune clean
+	@rm ppurs
+all: ppurs
 
-.PHONY: all clean explain purescript_main.exe
+.PHONY: all clean
