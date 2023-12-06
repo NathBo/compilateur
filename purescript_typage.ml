@@ -202,6 +202,7 @@ let unifyable tlist1 tlist2 =
   let rec aux tlist1 tlist2 = print_endline "ok";match tlist1,tlist2 with
     | [],[] -> true
     | Unit::q1,Unit::q2 | Int::q1,Int::q2 | String::q1,String::q2 | Boolean::q1,Boolean::q2 -> print_endline "c'est pareil";print_typ (List.hd tlist1);print_typ (List.hd tlist2);aux q1 q2
+    | Tcustom(s,_)::q1,Tcustom(t,_)::q2 when s=t -> aux q1 q2
     | Tgeneral s::q1,t::q2 -> print_endline "c'est pas pareil 1";if Smap.mem s !assoc
       then aux ((Smap.find s !assoc)::q1) (t::q2)
       else (assoc := Smap.add s t !assoc;aux q1 q2)
@@ -369,7 +370,7 @@ and typdecl env envtyps envinstances d = match d with
 
 and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list Smap.t) (general:bool) expr = match expr with
   | Ebinop (b,e1,e2) -> (match b with
-    | Bequals | Bnotequals -> let t = typexpr env envtyps envinstances general e1 in if List.mem t [Int;String;Boolean] then (if typexpr env envtyps envinstances general e2 <> t then typingerror "Mauvais type" else Boolean) else typingerror "Mauvais type"
+    | Bequals | Bnotequals -> let t = typexpr env envtyps envinstances general e1 in if List.mem t [Int;String;Boolean;Unit] then (if typexpr env envtyps envinstances general e2 <> t then typingerror "Mauvais type" else Boolean) else typingerror "Mauvais type"
     | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env envtyps envinstances general e1 <> Int then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Int then typingerror "Mauvais type" else Boolean
     | Bplus | Bminus | Btimes | Bdivide -> if typexpr env envtyps envinstances general e1 <> Int then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Int then typingerror "Mauvais type" else Int
     | Bor | Band -> if typexpr env envtyps envinstances general e1 <> Boolean then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Boolean then typingerror "Mauvais type" else Boolean
@@ -443,7 +444,7 @@ and find_compatible_instance envinstances cident f (general:bool) instances tlis
   let rec cherchercompatible tlistlist tlist = match tlistlist with
     | [] -> typingerror ("Pas d'instance compatible pour la classe "^cident^" dans l'appel de "^f)
     | tl::q when ((compatible (fst tl) tlist && (not general)) || (unifyable (fst tl) tlist && general)) && (touteslesinstancessontdispos envinstances (snd tl)) -> ()
-    | tl::q -> cherchercompatible q tlist in
+    | tl::q -> print_endline "on veut pas de ";List.iter print_typ (fst tl);print_bool(unifyable (fst tl) tlist);cherchercompatible q tlist in
   cherchercompatible instances listdestvar
 
 
