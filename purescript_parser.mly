@@ -33,28 +33,30 @@
 
 file:
 	| MIDLE_BLOCK* MODULE MIDLE_BLOCK IMPORT MIDLE_BLOCK d=separated_list(MIDLE_BLOCK,decl)  EOF
-		{ {imports = Import; decls = d} }
+		{ let p = {startpos = $startpos ; endpos = $endpos } in 
+			{imports = (Import p); decls = d; pos = p } }
 ;
 decl:
-	| d=defn {Ddefn d}
-	| t=tdecl {Dtdecl t}
-	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) { Ddata (u,l,x) }
-	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK { Dclass (u,l,d) }
-	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK { Dinstance(i,x) }
+	| d=defn { let p = {startpos = $startpos ; endpos = $endpos} in  Ddefn (d,p)}
+	| t=tdecl { let p = {startpos = $startpos ; endpos = $endpos} in  Dtdecl (t,p) }
+	| DATA u=UIDENT l=list(LIDENT) EQUAL x=separated_nonempty_list(VBAR, uidentAtypeList ) {let p = {startpos = $startpos ; endpos = $endpos} in  Ddata (u,l,x,p) }
+	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK {let p = {startpos = $startpos ; endpos = $endpos} in  Dclass (u,l,d,p) }
+	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK {let p = {startpos = $startpos ; endpos = $endpos} in Dinstance(i,x,p) }
 ;
 (* for data : *)
 uidentAtypeList:
 	| u=UIDENT x=list(atype) { (u,x) }
 ;
 defn:
-	| lid=LIDENT a=list(patarg) EQUAL e=expr { {ident = lid; patargs = a; expr=e } }
+	| lid=LIDENT a=list(patarg) EQUAL e=expr { let p = {startpos = $startpos ; endpos = $endpos} in {ident = lid; patargs = a; expr=e; pos=p } }
 ;
 
 tdecl:
 	| a=LIDENT DOUBLE_COLON b=pairNtypeArrow
-		{ {dident=a; identlist=[]; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b) } }
+		{ let p = {startpos = $startpos ; endpos = $endpos} in
+			{dident=a; identlist=[]; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b); pos=p} }
 	| a=LIDENT DOUBLE_COLON FORALL c=list(LIDENT) DOT b=pairNtypeArrow
-		{ {dident=a; identlist=c; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b) } }
+		{ let p = {startpos = $startpos; endpos=$endpos} in {dident=a; identlist=c; ntypelist=(triplet1 b); purtypelist=(triplet2 b); purtype=(triplet3 b); pos=p } }
 ;
 
 pairNtypeArrow:
@@ -67,79 +69,79 @@ tdeclEnd:
 ;
 
 ntype:
-	| u=UIDENT a=list(atype) { {nident = u ; atypes = a} } 
+	| u=UIDENT a=list(atype) { let p = {startpos = $startpos ; endpos = $endpos} in {nident = u ; atypes = a; pos = p} } 
 ;
 ntypeMany:
-	| u=UIDENT a=nonempty_list(atype) { {nident = u ; atypes = a} } 
+	| u=UIDENT a=nonempty_list(atype) { let p = {startpos = $startpos ; endpos = $endpos} in {nident = u ; atypes = a; pos = p} } 
 ;
 
 atype:
-	| l=LIDENT { Aident l}
-	| u=UIDENT { Aident u}
-	| LEFT_PAR t=purtype RIGHT_PAR { Apurtype t }
+	| l=LIDENT {let p = {startpos = $startpos ; endpos = $endpos} in  Aident (l,p)}
+	| u=UIDENT {let p = {startpos = $startpos ; endpos = $endpos} in  Aident (u,p)}
+	| LEFT_PAR t=purtype RIGHT_PAR { let p = {startpos = $startpos ; endpos = $endpos} in Apurtype (t,p) }
 ;
 purtype:  (* un uident peut être vu comme un atype ou un ntype, j'ai choisi atype *)
-	| a=atype {Patype a}
-	| n=ntypeMany {Pntype n}
+	| a=atype { let p = {startpos = $startpos ; endpos = $endpos} in Patype (a,p)}
+	| n=ntypeMany { let p = {startpos = $startpos ; endpos = $endpos} in Pntype (n,p)}
 ;
 instance:
-	| n=ntype { Intype n}
-	| x=ntype DOUBLE_ARROW y=ntype {Iarrow (x,y) }
-	| LEFT_PAR l=separated_nonempty_list(COMMA, ntype) RIGHT_PAR DOUBLE_ARROW n=ntype {Imularrow (l,n)}
+	| n=ntype {let p = {startpos = $startpos ; endpos = $endpos} in Intype (n,p)}
+	| x=ntype DOUBLE_ARROW y=ntype {let p = {startpos = $startpos ; endpos = $endpos} in Iarrow (x,y,p) }
+	| LEFT_PAR l=separated_nonempty_list(COMMA, ntype) RIGHT_PAR DOUBLE_ARROW n=ntype {let p = {startpos = $startpos ; endpos = $endpos} in Imularrow (l,n,p)}
 ;
 patarg:
-	| c=constant { Pconstant c }
-	| l=LIDENT { Plident l }
-	| u=UIDENT { Puident u }
-	| LEFT_PAR p=pattern RIGHT_PAR { Ppattern p }
+	| c=constant { let p = {startpos = $startpos ; endpos = $endpos} in Pconstant (c,p) }
+	| l=LIDENT { let p = {startpos = $startpos ; endpos = $endpos} in Plident (l,p) }
+	| u=UIDENT { let p = {startpos = $startpos ; endpos = $endpos} in Puident (u,p) }
+	| LEFT_PAR a=pattern RIGHT_PAR { let p = {startpos = $startpos ; endpos = $endpos} in Ppattern (a,p) }
 ;
 pattern:
-	| p=patarg	{ Ppatarg p }
-	| u=UIDENT p=nonempty_list(patarg) { Pmulpatarg (u,p) }
+	| a=patarg	{let p = {startpos = $startpos ; endpos = $endpos} in Ppatarg (a,p) }
+	| u=UIDENT a=nonempty_list(patarg) { let p = {startpos = $startpos ; endpos = $endpos} in Pmulpatarg (u,a,p) }
 ;
 constant:
-	| i=CONST_INT {Cint i}
-	| TRUE {Cbool true}
-	| FALSE {Cbool false}
-	| s=STRING {Cstring s}
+	| i=CONST_INT {let p = {startpos = $startpos ; endpos = $endpos} in Cint (i,p)}
+	| TRUE {let p = {startpos = $startpos ; endpos = $endpos} in Cbool (true,p)}
+	| FALSE {let p = {startpos = $startpos ; endpos = $endpos} in Cbool (false,p)}
+	| s=STRING {let p = {startpos = $startpos ; endpos = $endpos} in Cstring (s,p)}
 ;
 atom :
-	| c=constant { Aconstant c }
-	| l=LIDENT { Alident l}
-	| u=UIDENT { Auident u}
-	| LEFT_PAR e=expr RIGHT_PAR { Aexpr e }
-	| LEFT_PAR e=expr DOUBLE_COLON t=purtype RIGHT_PAR { Aexprtype (e,t) }
+	| c=constant { let p = {startpos = $startpos ; endpos = $endpos} in Aconstant (c,p) }
+	| l=LIDENT { let p = {startpos = $startpos ; endpos = $endpos} in Alident (l,p)}
+	| u=UIDENT { let p = {startpos = $startpos ; endpos = $endpos} in Auident (u,p)}
+	| LEFT_PAR e=expr RIGHT_PAR { let p = {startpos = $startpos ; endpos = $endpos} in Aexpr (e,p) }
+	| LEFT_PAR e=expr DOUBLE_COLON t=purtype RIGHT_PAR { let p = {startpos = $startpos ; endpos = $endpos} in Aexprtype (e,t,p) }
 ;
 
 expr:
-	| a=atom { Eatom a }
-	| MINUS e=expr { Ebinop(Bminus,Eatom(Aconstant(Cint 0)),e) }
-	| e1=expr b=binop e2=expr {Ebinop (b,e1,e2)}
-	| lid=LIDENT atm=nonempty_list(atom) { Elident (lid,atm) }
-	| uid=UIDENT atm=nonempty_list(atom) { Euident (uid,atm) }
-	| IF e1=expr THEN e2=expr ELSE e3=expr { Eif (e1,e2,e3) }
-	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { Edo l }
-	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { Elet (l,e) }
-	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { Ecase (e,l) }
+	| a=atom { let p = {startpos = $startpos ; endpos = $endpos} in Eatom (a,p) }
+	| MINUS e=expr { let p = {startpos = $startpos ; endpos = $endpos} in Ebinop(Bminus p,Eatom(Aconstant(Cint (0,p),p),p),e,p) }
+	| e1=expr b=binop e2=expr {let p = {startpos = $startpos ; endpos = $endpos} in Ebinop (b,e1,e2,p)}
+	| lid=LIDENT atm=nonempty_list(atom) { let p = {startpos = $startpos ; endpos = $endpos} in Elident (lid,atm,p) }
+	| uid=UIDENT atm=nonempty_list(atom) { let p = {startpos = $startpos ; endpos = $endpos} in Euident (uid,atm,p) }
+	| IF e1=expr THEN e2=expr ELSE e3=expr { let p = {startpos = $startpos ; endpos = $endpos} in Eif (e1,e2,e3,p) }
+	| DO LEFT_BLOCK l=separated_list(MIDLE_BLOCK, expr) RIGHT_BLOCK { let p = {startpos = $startpos ; endpos = $endpos} in Edo (l,p) }
+	| LET LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,binding) RIGHT_BLOCK IN e=expr { let p = {startpos = $startpos ; endpos = $endpos} in Elet (l,e,p) }
+	| CASE e=expr OF LEFT_BLOCK l=separated_nonempty_list(MIDLE_BLOCK,branch) RIGHT_BLOCK { let p = {startpos = $startpos ; endpos = $endpos} in Ecase (e,l,p) }
 ;
 binding:
-	| l=LIDENT EQUAL e=expr { {ident=l;bindexpr=e} }
+	| l=LIDENT EQUAL e=expr { let p = {startpos = $startpos ; endpos = $endpos} in {ident=l;bindexpr=e;pos=p} }
 ;
 branch:
-	| p=pattern ARROW e=expr { {pattern=p ; expr=e} } 
+	| a=pattern ARROW e=expr { let p = {startpos = $startpos ; endpos = $endpos} in {pattern=a ; expr=e; pos=p} } 
 ;
 %inline binop:
-	| DOUBLE_EQUAL {Bequals}
-	| DIF {Bnotequals}
-	| LESS {Binf}
-	| LESS_E {Binfeq}
-	| GREATER {Bsup}
-	| GREATER_E {Bsupeq}
-	| MINUS { Bminus }
-	| PLUS { Bplus }
-	| TIMES { Btimes }
-	| DIVIDE { Bdivide }
-	| AND_LOG {Band}
-	| OR_LOG {Bor}
-	| CONS {Bcons}
+	| DOUBLE_EQUAL {let p = {startpos = $startpos ; endpos = $endpos} in Bequals p}
+	| DIF {let p = {startpos = $startpos ; endpos = $endpos} in Bnotequals p}
+	| LESS {let p = {startpos = $startpos ; endpos = $endpos} in Binf p}
+	| LESS_E {let p = {startpos = $startpos ; endpos = $endpos} in Binfeq p}
+	| GREATER {let p = {startpos = $startpos ; endpos = $endpos} in Bsup p}
+	| GREATER_E {let p = {startpos = $startpos ; endpos = $endpos} in Bsupeq p}
+	| MINUS {let p = {startpos = $startpos ; endpos = $endpos} in Bminus p}
+	| PLUS {let p = {startpos = $startpos ; endpos = $endpos} in Bplus p}
+	| TIMES {let p = {startpos = $startpos ; endpos = $endpos} in Btimes p}
+	| DIVIDE {let p = {startpos = $startpos ; endpos = $endpos} in Bdivide p}
+	| AND_LOG {let p = {startpos = $startpos ; endpos = $endpos} in Band p}
+	| OR_LOG {let p = {startpos = $startpos ; endpos = $endpos} in Bor p}
+	| CONS {let p = {startpos = $startpos ; endpos = $endpos} in Bcons p}
 ;
