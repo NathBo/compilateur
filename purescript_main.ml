@@ -102,5 +102,5 @@ let () =
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
 		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e et afficher le numero de ligne *)
-			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^pos.startpos.pos_lnum ^ " colonne "^pos.startpos.pos_cnum ^" : "^s ^ colorDefault);
+			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^(string_of_int pos.startpos.pos_lnum) ^ " colonne "^(string_of_int pos.startpos.pos_bol) ^" : "^s ^ colorDefault);
 			exit 1
