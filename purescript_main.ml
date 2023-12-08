@@ -93,10 +93,7 @@ let () =
 			localisation buf;
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
-		| Purescript_typage.TypingError s -> (* TODO afficher e et afficher le numero de ligne *)
+		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e et afficher le numero de ligne *)
 			eprintf "%s\n" (colorRed ^ "Erreur typage : "^s ^ colorDefault);
 			exit 1
-
-
-
 			

@@ -111,7 +111,7 @@ and typclass =
 module Smap = Map.Make(String)
 
 
-exception TypingError of string
+exception TypingError of string * position
 
 let typingerror s = raise (TypingError s)
 
@@ -178,7 +178,7 @@ let rec print_typ t = match canon t with
   | Tgeneral s -> print_endline s
   | _ -> failwith "Non"
 
-exception UnificationFailure of typ * typ
+exception UnificationFailure of typ * typ * position
 
 let unification_error t1 t2 = raise (UnificationFailure (canon t1, canon t2))
 
