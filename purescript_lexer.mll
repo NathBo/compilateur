@@ -10,7 +10,6 @@
 	let close n mode =
 		if mode then begin
 			let result = ref [] in
-			(* while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) do *)
 			while not (Stack.is_empty stack) && (fst (Stack.top stack) > n) && (not (List.mem (snd (Stack.top stack)) [LEFT_PAR; IF; THEN; LET])) do
 				result := RIGHT_BLOCK :: !result;
 				ignore (Stack.pop stack)
@@ -25,8 +24,6 @@
 		List.filter (fun t -> match t with | MIDLE_BLOCK -> false | _ -> true) r
 	
 	let unstack_until symb =
-(*		Printf.printf "UNSTACK !!!!\n";
-		Printf.printf "   : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
 		let result = ref [] in
 		while not (Stack.is_empty stack) && (snd(Stack.top stack) <> symb) do
 			result := RIGHT_BLOCK :: !result;
@@ -36,9 +33,6 @@
 			raise (Lexing_error "erreur d'indentation")
 		end else (ignore (Stack.pop stack) ; !result)
 
-
-
-	
 
 	let curCol l =  (l.lex_curr_p.pos_cnum - l.lex_curr_p.pos_bol)
 	let string_buffer = Buffer.create 1024
@@ -184,41 +178,5 @@ and commentMany = parse
 				end in
 				add nxtT true
 			end;
-
-			(*Printf.printf "etat de la queue :\n   ";
-			Queue.iter (fun x -> print_string ((match x with
-				| MODULE -> "MODULE"
-				| IMPORT -> "IMPORT"
-				| EOF -> "EOF"
-				| LIDENT _ -> "LIDENT"
-				| EQUAL -> "="
-				| CONST_INT _ -> "const int"
-				| IF -> "IF"
-				| THEN -> "THEN"
-				| ELSE -> "ELSE"
-				| TRUE | FALSE -> "BOOLEEN"
-				| LEFT_BLOCK -> "__{__"
-				| LEFT_PAR -> "__(__"
-				| RIGHT_BLOCK -> "__}__"
-				| RIGHT_PAR -> "__)__"
-				| MIDLE_BLOCK -> "__;__"
-				| DO -> "DO"
-				| STRING _ -> "string"
-				| IN -> "in"
-				| LET -> "let"
-				| CASE -> "CASE"
-				| ARROW -> "_->__"
-				| OF -> "OF"
-				| PLUS -> "PLUS"
-				| INSTANCE -> "INSTANCE"
-				| DOUBLE_ARROW -> "_=>__"
-				| WHERE -> "WHERE"
-				| DOUBLE_COLON -> "_::__"
-				| UIDENT _ -> "UIDENT"
-				| CLASS -> "CLASS"
-				| _ -> "??????"
-			)^" ; ")) tokens; Printf.printf "\n"; 
-			Printf.printf "etat de la pile : "; Stack.iter (fun (x,y) -> Printf.printf "%d " x) stack; Printf.printf "\n"; *)
 			Queue.pop tokens
 }
-

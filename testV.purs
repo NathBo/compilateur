@@ -5,7 +5,7 @@ import Effect.Console
 
 
 class A where
-  foo:: Int -> String
+  foo:: Int -> String ? forall a b
 class B where
   bar:: Int -> String
 instance A => B where

@@ -135,7 +135,7 @@ and print_expr fmt e = match e with
   | Eif (e1,e2,e3,_) -> fprintf fmt "if %a then %a else %a" print_expr e1 print_expr e2 print_expr e3
   | Edo (e,_) -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_expr) e
   | Elet (b,e,_) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")  print_bindings) b print_expr e
-  | Eatom (a,_) -> print_atom fmt a (* TODO : a modifier j'ai rajouté ça vite fait sans bien comprendre la syntaxe *)
+  | Eatom (a,_) -> print_atom fmt a
   | Ecase (e,b,_) -> fprintf fmt "case %a of {@[<hov>%a@]}" print_expr e  Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@") print_branch) b
 
 and print_bindings fmt b =
@@ -191,18 +191,3 @@ and print_decl fmt d = match d with
 
 and print_file fmt f =
   fprintf fmt "@[<hov>%a@]" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")print_decl) f.decls
-
-
-
-(*
-let e = Ebinop(Bplus,Eident("oui",[Aconstant (Cint 1);Aconstant (Cstring "non")]),Eident("vrai",[Aconstant (Cbool false)]))
-
-let () = printf "e = @[%a@]@." print_expr e
-
-
-let ex =
-  {imports = Import;decls = [Dclass("C",[],[{dident = "foo"; identlist = [];ntypelist = [];purtypelist = []; purtype = Patype(Auident("String"))}])]}
-
-let() = printf "e = @[%a@]@." print_file ex
-*)
-

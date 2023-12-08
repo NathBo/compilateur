@@ -2,6 +2,9 @@ ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_pars
 	@dune build
 	@mv purescript_main.exe ppurs
 
+all: ppurs
+	@./ppurs test.purs
+
 V: ppurs
 	@./ppurs testV.purs
 N: ppurs
