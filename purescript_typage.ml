@@ -113,7 +113,7 @@ module Smap = Map.Make(String)
 
 exception TypingError of string * position
 
-let typingerror s = raise (TypingError s)
+let typingerror s p = raise (TypingError (s,p))
 
 
 
@@ -178,10 +178,10 @@ let rec print_typ t = match canon t with
   | Tgeneral s -> print_endline s
   | _ -> failwith "Non"
 
-exception UnificationFailure of typ * typ * position
+(*exception UnificationFailure of typ * typ * position
 
 let unification_error t1 t2 = raise (UnificationFailure (canon t1, canon t2))
-
+*)
 
 let rec grosor l = match l with
   | [] -> false
@@ -354,42 +354,42 @@ let rec typfile f =
   let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
   List.iter (typdecl env envtyps !globalenvinstances) f.decls;
   checkforenddef !envtyps !globalenvinstances;
-  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" else ()
+  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else ()
 
 
 and typdecl env envtyps envinstances d = match d with
-  | Dtdecl td -> checkforenddef !envtyps !globalenvinstances;let a,b,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,d) !envfonctions
-  | Ddefn df -> print_endline "je suis le probleme ?";(match fstr(smapfind df.ident !envfonctions) with
+  | Dtdecl (td,p) -> checkforenddef !envtyps !globalenvinstances;let a,b,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,d) !envfonctions
+  | Ddefn (df,p) -> print_endline "je suis le probleme ?";(match fstr(smapfind df.ident !envfonctions) with
     | Tarrow(tlist,t) -> typdfn env !envtyps !globalenvinstances true df tlist t;print_endline "Non"
     | _ -> failwith "pas possible")
-  | Ddata (s,slist,ialist) -> checkforenddef !envtyps !globalenvinstances;typdata env envtyps envinstances s slist ialist
-  | Dclass (s,slist,tdlist) -> checkforenddef !envtyps !globalenvinstances;typclass env !envtyps !globalenvinstances s slist tdlist
-  | Dinstance (i,deflist) -> checkforenddef !envtyps !globalenvinstances;typinstance env !envtyps !globalenvinstances i deflist
+  | Ddata (s,slist,ialist,p) -> checkforenddef !envtyps !globalenvinstances;typdata env envtyps envinstances s slist ialist
+  | Dclass (s,slist,tdlist,p) -> checkforenddef !envtyps !globalenvinstances;typclass env !envtyps !globalenvinstances s slist tdlist
+  | Dinstance (i,deflist,p) -> checkforenddef !envtyps !globalenvinstances;typinstance env !envtyps !globalenvinstances i deflist
 
 
 
 and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list Smap.t) (general:bool) expr = match expr with
-  | Ebinop (b,e1,e2) -> (match b with
+  | Ebinop (b,e1,e2,p) -> (match b with
     | Bequals | Bnotequals -> let t = typexpr env envtyps envinstances general e1 in if List.mem t [Int;String;Boolean;Unit] then (if typexpr env envtyps envinstances general e2 <> t then typingerror "Mauvais type" else Boolean) else typingerror "Mauvais type"
     | Binf | Binfeq | Bsup | Bsupeq -> if typexpr env envtyps envinstances general e1 <> Int then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Int then typingerror "Mauvais type" else Boolean
     | Bplus | Bminus | Btimes | Bdivide -> if typexpr env envtyps envinstances general e1 <> Int then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Int then typingerror "Mauvais type" else Int
     | Bor | Band -> if typexpr env envtyps envinstances general e1 <> Boolean then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> Boolean then typingerror "Mauvais type" else Boolean
     | Bcons -> if typexpr env envtyps envinstances general e1 <> String then typingerror "Mauvais type" else if typexpr env envtyps envinstances general e2 <> String then typingerror "Mauvais type" else String
   )
-  | Eatom a -> typatom env envtyps envinstances general a
-  | Eif (e1,e2,e3) -> if typexpr env envtyps envinstances general e1 <> Boolean then typingerror "Mauvais type" else let t = typexpr env envtyps envinstances general e2 in if typexpr env envtyps envinstances general e3 <> t then typingerror "Mauvais type" else t
-  | Edo elist -> (List.iter (fun e -> if typexpr env envtyps envinstances general e <> Tcustom ("Effect",[Unit]) then typingerror "Mauvais type" else ()) elist;Tcustom ("Effect",[Unit]))
-  | Elet (blist,e) ->
+  | Eatom (a,p) -> typatom env envtyps envinstances general a
+  | Eif (e1,e2,e3,p) -> if typexpr env envtyps envinstances general e1 <> Boolean then typingerror "Mauvais type" else let t = typexpr env envtyps envinstances general e2 in if typexpr env envtyps envinstances general e3 <> t then typingerror "Mauvais type" else t
+  | Edo (elist,p) -> (List.iter (fun e -> if typexpr env envtyps envinstances general e <> Tcustom ("Effect",[Unit]) then typingerror "Mauvais type" else ()) elist;Tcustom ("Effect",[Unit]))
+  | Elet (blist,e,p) ->
     let rec aux env envtyps envinstances l = match l with
       | b::q -> let t = typexpr env envtyps envinstances general b.bindexpr in aux (add_gen b.ident t env) envtyps envinstances q
       | [] -> env in
     typexpr (aux env envtyps envinstances blist) envtyps envinstances  general e
-  | Ecase (e,blist) -> let t = typexpr env envtyps envinstances general e in (match blist with
+  | Ecase (e,blist,p) -> let t = typexpr env envtyps envinstances general e in (match blist with
     | [] -> typingerror "Pattern vide"
     | b::q -> let t' = typbranch env envtyps envinstances t general b in List.iter (fun x-> if typbranch env envtyps envinstances t general x <> t' then typingerror "bad pattern type" else ()) q;
     if not (checkexaustivelist env envtyps envinstances [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then typingerror "Pattern non exhaustif" else t'
   )
-  | Elident (f,alist) -> let envinstances = Smap.union noconseqconflit envinstances (fourth (smapfind f !envfonctions))  in if mem f env then typingerror (f^" n'est pas une fonction")
+  | Elident (f,alist,p) -> let envinstances = Smap.union noconseqconflit envinstances (fourth (smapfind f !envfonctions))  in if mem f env then typingerror (f^" n'est pas une fonction")
   else ((match thrd (smapfind f !envfonctions) with
   | None -> ()
   | Some cident -> let instances = smapfind cident envinstances in find_compatible_instance envinstances cident f general instances (List.map (typatom env envtyps envinstances general) alist));
@@ -409,7 +409,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
         | _ -> if not( unifyable [typatom env envtyps envinstances general a] [t]) then typingerror ("mauvais argument de fonction pour "^f) else aux q1 q2)
       | _ -> typingerror ("la fonction "^f^" ne prend pas autant d'arguments")) in
       aux tlist alist; substitute !dejapris t)
-  | Euident (s,alist) -> let constr = smapfind s !envconstructors in
+  | Euident (s,alist,p) -> let constr = smapfind s !envconstructors in
     let rec aux alist tlist = match alist,tlist with
       | [],[] -> ()
       | a::q1,t::q2 -> if typatom env envtyps envinstances general a <> t then typingerror ("types pas compatible dans l'utilisation du constructeur "^s) else aux q1 q2
@@ -450,16 +450,16 @@ and find_compatible_instance envinstances cident f (general:bool) instances tlis
 
 
 and typatom env envtyps envinstances (general:bool) a = match a with
-  | Alident s -> find s env
-  | Auident s -> (smapfind s !envconstructors).ctyp
-  | Aconstant c -> typconstant env envtyps envinstances c
-  | Aexpr e -> typexpr env envtyps envinstances general e
-  | Aexprtype (e,p) -> let t = typexpr env envtyps envinstances general e in if t <> typpurtyp env envtyps envinstances p then typingerror "Mauvais type" else t
+  | Alident (s,p) -> find s env
+  | Auident (s,p) -> (smapfind s !envconstructors).ctyp
+  | Aconstant (c,p) -> typconstant env envtyps envinstances c
+  | Aexpr (e,p) -> typexpr env envtyps envinstances general e
+  | Aexprtype (e,p,pos) -> let t = typexpr env envtyps envinstances general e in if t <> typpurtyp env envtyps envinstances p then typingerror "Mauvais type" pos else t
 
 and typconstant env envtyps envinstances c = match c with
-  | Cbool _ -> Boolean
-  | Cint _ -> Int
-  | Cstring _ -> String
+  | Cbool (_,p) -> Boolean
+  | Cint (_,p) -> Int
+  | Cstring (_,p) -> String
 
 and typbranch env envtyps envinstances t (general:bool) b =
   let conflit s a _ = Some a in
@@ -467,8 +467,8 @@ and typbranch env envtyps envinstances t (general:bool) b =
   typexpr env envtyps envinstances general b.expr
 
 and ensuretyppattern env envtyps envinstances t p = match p with
-  | Ppatarg p -> ensuretyppatarg env envtyps envinstances t p
-  | Pmulpatarg (s,plist) -> let constr = smapfind s !envconstructors in
+  | Ppatarg (p,pos) -> ensuretyppatarg env envtyps envinstances t p
+  | Pmulpatarg (s,plist,pos) -> let constr = smapfind s !envconstructors in
     if not (unifyable [t]  [get_typ_constr_multi env envtyps envinstances constr plist t s])
     then (typingerror (s^" n'est pas un constructeur du bon type"))
     else print_endline "c koi encore ";print_typ t;print_typ (get_typ_constr_multi env envtyps envinstances constr plist t s);let rec aux envi plist tlist = match plist,tlist with
@@ -482,12 +482,12 @@ and ensuretyppattern env envtyps envinstances t p = match p with
       
 
 and ensuretyppatarg env envtyps envinstances t p = match p with
-  | Pconstant c -> if not (unifyable [typconstant env envtyps envinstances c] [t]) then typingerror "Mauvais patterne" else env
-  | Plident s -> add s t env
-  | Puident s -> (match t,(smapfind s !envconstructors).ctyp with
+  | Pconstant (c,pos) -> if not (unifyable [typconstant env envtyps envinstances c] [t]) then typingerror "Mauvais pattern" else env
+  | Plident (s,pos) -> add s t env
+  | Puident (s,pos) -> (match t,(smapfind s !envconstructors).ctyp with
     | Tcustom(s1,l1),Tcustom(s2,l2) -> if s1<>s2 then typingerror (s^" n'est pas un constructeur du bon type custom") else env
     | t1,t2 -> if t1<>t2 then (print_endline "devait etre un ";print_typ t;print_endline "et pas un ";print_typ (smapfind s !envconstructors).ctyp;typingerror (s^" n'est pas un constructeur du bon type") )else env)
-  | Ppattern p -> ensuretyppattern env envtyps envinstances t p
+  | Ppattern (p,pos) -> ensuretyppattern env envtyps envinstances t p
 
 and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s =
   let t = constr.ctyp in
@@ -497,8 +497,8 @@ and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tac
     | _ -> t
 
 and typpatarg env envtyps envinstances p = match p with
-  | Pconstant c -> typconstant env envtyps envinstances c
-  | Plident s -> Tgeneral("a")
+  | Pconstant (c,pos) -> typconstant env envtyps envinstances c
+  | Plident (s,pos) -> Tgeneral("a")
   | _ -> failwith "pas implémenté"
 
 
@@ -563,8 +563,8 @@ and checkexaustivelist env envtyps envinstances tlist plistlist =
 
 
 and typpurtyp env envtyps envinstances pt = match pt with
-  | Patype a -> typatype env envtyps envinstances a
-  | Pntype n -> typntype env envtyps envinstances n
+  | Patype (a,pos) -> typatype env envtyps envinstances a
+  | Pntype (n,pos) -> typntype env envtyps envinstances n
 
 and typntype env envtyps envinstances n =
   let t,arite = smapfind n.nident envtyps in
@@ -575,8 +575,8 @@ and typntype env envtyps envinstances n =
     | _ -> t
 
 and typatype (env:env) envtyps envinstances a = match a with
-  | Apurtype p -> typpurtyp env envtyps envinstances p
-  | Aident s -> print_endline ("On cherche ici "^s);let t,arite = smapfind s envtyps in if arite = 0 then t else typingerror "devrait etre un type d'arite 0"
+  | Apurtype (p,pos) -> typpurtyp env envtyps envinstances p
+  | Aident (s,pos) -> print_endline ("On cherche ici "^s);let t,arite = smapfind s envtyps in if arite = 0 then t else typingerror "devrait etre un type d'arite 0" pos
 
 and typtdecl env envtyps envinstances td =
   if Smap.mem td.dident !envfonctions
@@ -691,8 +691,8 @@ and ajouter envtyps alist = print_endline "ajouter";match alist with
   | [] -> envtyps
 
 and ajouterpurtyp envtyps p = match p with
-  | Patype a -> ajouter envtyps [a]
-  | Pntype n -> ajouterntyp envtyps n
+  | Patype (a,pos) -> ajouter envtyps [a]
+  | Pntype (n,pos) -> ajouterntyp envtyps n
 
 and ajouterntyp envtyps n = print_endline "ajoutern";ajouter envtyps n.atypes
 
@@ -703,7 +703,7 @@ and ajouterntyplist envtyps nlist = print_endline "ajouternl";match nlist with
 
 
 and typinstance env envtyps envinstances i deflist = match i with
-  | Imularrow (nlist,n) -> (let clident = n.nident in
+  | Imularrow (nlist,n,pos) -> (let clident = n.nident in
     let slist,classenvfonctions,flist = smapfind clident !envclasses in  
     let rec addinstance envinstances envtyps nlist = match nlist with
       | [] -> envinstances
@@ -759,17 +759,5 @@ and typinstance env envtyps envinstances i deflist = match i with
     let listdesoblig = aux6 nlist in
     Smap.iter aux3 classenvfonctions;globalenvinstances := Smap.add n.nident ((List.map (typatype env envtyps envinstances) n.atypes,listdesoblig)::(smapfind n.nident !globalenvinstances)) !globalenvinstances)
 
-  | Iarrow (n1,n2) -> typinstance env envtyps envinstances (Imularrow([n1],n2)) deflist
-  | Intype n -> typinstance env envtyps envinstances (Imularrow([],n)) deflist
-  
-
-
-
-
-
-
-
-
-
-
-
+  | Iarrow (n1,n2,pos) -> typinstance env envtyps envinstances (Imularrow([n1],n2,pos)) deflist
+  | Intype (n,pos) -> typinstance env envtyps envinstances (Imularrow([],n,pos)) deflist

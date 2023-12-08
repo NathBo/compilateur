@@ -1,5 +1,5 @@
 type position =
-	{startpos: Lexing.position; endpos: Lexing.position}
+  {startpos: Lexing.position; endpos: Lexing.position}
 
 and file =
   {imports : imports; decls : decl list; pos : position}
@@ -75,19 +75,19 @@ and branch =
   {pattern : pattern; expr : expr; pos : position}
 
 and binop =
-	| Bequals of position
-	| Bnotequals of position
-	| Binf of position
-	| Binfeq of position
-	| Bsup of position
-	| Bsupeq of position
-	| Bplus  of position
-	| Bminus of position
-	| Btimes of position
-	| Bdivide of position
-	| Band of position
-	| Bor of position
-	| Bcons of position
+  | Bequals of position
+  | Bnotequals of position
+  | Binf of position
+  | Binfeq of position
+  | Bsup of position
+  | Bsupeq of position
+  | Bplus  of position
+  | Bminus of position
+  | Btimes of position
+  | Bdivide of position
+  | Band of position
+  | Bor of position
+  | Bcons of position
 
 
 and ident = string
