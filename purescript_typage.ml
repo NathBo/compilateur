@@ -601,14 +601,15 @@ and typdata env envtyps envinstances pos s slist ialist =
   else if not (alldifferent slist)
   then typingerror ("toutes les variables de types ne sont pas differentes dans la définition du type "^s) pos
 else
-  let t = Tcustom (s,[]) in
-  envtyps := Smap.add s (t,List.length slist) !envtyps;
   let rec aux envtyps l = match l with
     | [] -> envtyps
     | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
   let conflit pos s _ _ = (typingerror ("conflit dans les forall avec "^s)) pos in
   let envvartyps = aux Smap.empty slist in
   let envtypsact = Smap.union (conflit pos) envvartyps !envtyps in
+  let t = Tcustom (s,List.map (fun s -> fst(smapfind s envvartyps pos)) slist) in
+  envtyps := Smap.add s (t,List.length slist) !envtyps;
+  let envtypsact = Smap.add s (t,List.length slist) envtypsact in
   let rec aux2 l = match l with
     | [] -> ()
     | (i,alist)::q -> if Smap.mem i !envconstructors
