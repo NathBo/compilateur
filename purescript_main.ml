@@ -101,6 +101,7 @@ let () =
 			localisation (calcPosition buf);
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
-		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e et afficher le numero de ligne *)
+		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e *)
+			localisation pos;
 			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^(string_of_int pos.startpos.pos_lnum) ^ " colonne "^(string_of_int pos.startpos.pos_bol) ^" : "^s ^ colorDefault);
 			exit 1
