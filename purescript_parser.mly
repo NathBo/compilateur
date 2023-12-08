@@ -4,7 +4,6 @@
 	let triplet1 (a,b,c) = a
 	let triplet2 (a,b,c) = b
 	let triplet3 (a,b,c) = c
-
 %}
 
 %token LEFT_BLOCK RIGHT_BLOCK MIDLE_BLOCK
@@ -43,7 +42,6 @@ decl:
 	| CLASS u=UIDENT l=list(LIDENT) WHERE LEFT_BLOCK d=separated_list(MIDLE_BLOCK,tdecl) RIGHT_BLOCK {let p = {startpos = $startpos ; endpos = $endpos} in  Dclass (u,l,d,p) }
 	| INSTANCE i=instance WHERE LEFT_BLOCK x=separated_list(MIDLE_BLOCK, defn) RIGHT_BLOCK {let p = {startpos = $startpos ; endpos = $endpos} in Dinstance(i,x,p) }
 ;
-(* for data : *)
 uidentAtypeList:
 	| u=UIDENT x=list(atype) { (u,x) }
 ;

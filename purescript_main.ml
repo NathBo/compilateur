@@ -1,7 +1,8 @@
 open Format
 open Lexing
+open Purescript_ast
 
-(* Option de compilation, pour s'arrêter à l'issue du parser *)
+(* Option de compilation *)
 let parse_only = ref false
 let type_only = ref false
 
@@ -18,38 +19,45 @@ let options =
 	 "--type-only", Arg.Set type_only,
 	  "Pour ne faire que l'analyse syntaxique puis le typage"]
 
-let usage = "compilateur de purscript"
+let usage = "compilateur de purscript\nutilisation : ./ppurs myfile.purs"
 (* définition des couleurs pour l'affichage *)
 let colorRed = "\o033[31m"
 let colorGreen = "\o033[32m"
 let colorDefault = "\o033[0m"
 (* localise une erreur en indiquant la ligne et la colonne *)
-let get_line n =
+let get_line n1 =
 	let c = Stdlib.open_in !ifile in
-	for iLine = 0 to n-2 do
+	for iLine = 0 to n1-2 do
 		ignore (input_line c)
 	done;
 	let result = input_line c in
 	Stdlib.close_in c;
 	result
 
-let localisation buf =
-	let pos = Lexing.lexeme_start_p buf in
+let calcPosition buf =
+	let start = Lexing.lexeme_start_p buf in
 	let nextLexem = Lexing.lexeme buf in
-	let l = pos.pos_lnum in
-	let c_1 = pos.pos_cnum - pos.pos_bol in
-	let c_2 = c_1 + (String.length nextLexem) in
-	eprintf "File \"%s\", line %d, characters %d-%d:\n" !ifile l c_1 c_2;
+	let longueurLexem = String.length nextLexem in
+	{startpos = start; endpos =
+		{pos_fname = start.pos_fname ; pos_lnum = start.pos_lnum; pos_bol = start.pos_bol ; pos_cnum = start.pos_cnum + longueurLexem} }
+
+
+let localisation pos =
+	let l = pos.startpos.pos_lnum in
+	let c_1 = pos.startpos.pos_cnum - pos.startpos.pos_bol in
 	try
-		let line = get_line l in
+		let line = get_line pos.startpos.pos_lnum in
+		let c_2 =
+			if pos.startpos.pos_lnum = pos.endpos.pos_lnum then pos.endpos.pos_cnum - pos.endpos.pos_bol
+			else String.length line in
+		eprintf "File \"%s\", line %d, characters %d-%d:\n" !ifile l c_1 c_2;
 		eprintf "%s%s%s%s%s\n" (String.sub line 0 c_1) colorGreen (String.sub (line^" ")  c_1 (c_2-c_1)) colorDefault (String.sub (line^" ") c_2 (max (String.length line -c_2) 0));
 		eprintf "%s%s%s%s\n" (String.make c_1 ' ' ) colorGreen (String.make (c_2-c_1) '^') colorDefault
 
 	with
-		|End_of_file -> eprintf "%s\n" (colorGreen ^ "End_of_file" ^ colorDefault)
+		|End_of_file -> eprintf "File \"%s\", line %d, characters %d-%d:\n%s\n" !ifile l c_1 c_1 (colorGreen ^ "End_of_file" ^ colorDefault)
 
 
-	
 
 let () =
 	(* Parsing de la ligne de commande *)
@@ -86,14 +94,13 @@ let () =
 
 	with
 		| Purescript_lexer.Lexing_error c ->
-			localisation buf; 
+			localisation (calcPosition buf); 
 			eprintf "%s" (colorRed^"Erreur lexicale : "^colorDefault^c^"\n");
 			exit 1
 		| Purescript_parser.Error ->
-			localisation buf;
+			localisation (calcPosition buf);
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
 		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e et afficher le numero de ligne *)
 			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^pos.startpos.pos_lnum ^ " colonne "^pos.startpos.pos_cnum ^" : "^s ^ colorDefault);
 			exit 1
-			
