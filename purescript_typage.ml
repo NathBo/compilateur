@@ -1,7 +1,20 @@
 open Purescript_ast
-(*
+
+type typ =
+  | Unit
+  | Int
+  | String
+  | Boolean
+  | Tcustom of string * typ list
+  | Tarrow of typ list*typ
+  | Tvar of tvar
+  | Tgeneral of string
+
+and tvar = {id : int; mutable def : typ option}
+
+
 type tfile =
-  {imports : imports; decls : decl list}
+  {timports : timports; tdecls : tdecl list}
 
 and timports = Import
 
@@ -15,80 +28,68 @@ and tdecl =
 and tdefn =
   {ident : ident; tpatargs : tpatarg list; texpr : texpr}
 
-and tdecl =
+and ttdecl =
   {tdident : ident; tidentlist : ident list; tntypelist : tntype list; tpurtypelist : tpurtype list; tpurtype : tpurtype}
 
-and ntype =
-  {nident : ident; atypes : atype list}
+and tntype =
+  {tnident : ident; tatypes : tatype list}
 
-and atype =
-  | Aident of ident
-  | Apurtype of purtype
+and tatype =
+  | TAident of ident
+  | TApurtype of tpurtype
 
-and purtype =     (*remplace type car type est un mot clef en Ocaml*)
-  | Patype of atype
-  | Pntype of ntype
+and tpurtype =   
+  | TPatype of tatype
+  | TPntype of tntype
 
-and instance =
-  | Intype of ntype
-  | Iarrow of ntype * ntype
-  | Imularrow of ntype list * ntype
+and tinstance =
+  | TIntype of tntype
+  | TIarrow of tntype * tntype
+  | TImularrow of tntype list * tntype
 
-and patarg =
-  | Pconstant of constant
-  | Plident of ident
-  | Puident of ident
-  | Ppattern of pattern
+and tpatarg =
+  | TPconstant of tconstant
+  | TPlident of ident
+  | TPuident of ident
+  | TPpattern of tpattern
 
-and pattern =
-  | Ppatarg of patarg
-  | Pmulpatarg of ident * patarg list
+and tpattern =
+  | TPpatarg of tpatarg
+  | TPmulpatarg of ident * tpatarg list
 
-and constant =
-  | Cbool of bool
-  | Cint of int
-  | Cstring of string
+and tconstant =
+  | TCbool of bool
+  | TCint of int
+  | TCstring of string
 
-and atom =
-  | Aconstant of constant
-  | Alident of ident
-  | Auident of ident
-  | Aexpr of expr
-  | Aexprtype of expr * purtype
+and tatom =
+  | TAconstant of tconstant*typ
+  | TAlident of ident*typ
+  | TAuident of ident*typ
+  | TAexpr of expr*typ
+  | TAexprtype of expr * purtype*typ
 
-and expr =
-  | Eatom of atom
-  | Ebinop of binop * expr * expr
-  | Elident of ident * atom list 
-  | Euident of ident * atom list 
-  | Eif of expr * expr * expr
-  | Edo of expr list
-  | Elet of binding list * expr
-  | Ecase of expr * branch list
+and texpr =
+  | TEatom of tatom*typ
+  | TEbinop of tbinop * texpr * texpr*typ
+  | TElident of ident * tatom list *typ
+  | TEuident of ident * tatom list *typ
+  | TEif of texpr * texpr * texpr*typ
+  | TEdo of texpr list*typ
+  | TElet of tbinding list * texpr*typ
+  | TEcase of texpr * tbranch list*typ
 
-and binding =
-  {ident : ident; bindexpr : expr}
+and tbinding =
+  {tident : ident; tbindexpr : expr}
 
-and branch =
-  {pattern : pattern; expr : expr}
+and tbranch =
+  {tpattern : tpattern; texpr : texpr}
 
-and binop = Bequals | Bnotequals | Binf | Binfeq | Bsup | Bsupeq | Bplus | Bminus | Btimes | Bdivide | Band | Bor | Bcons
+and tbinop = TBequals | TBnotequals | TBinf | TBinfeq | TBsup | TBsupeq | TBplus | TBminus | TBtimes | TBdivide | TBand | TBor | TBcons
 
 
-and ident = string
-*)
 
-type typ =
-  | Unit
-  | Int
-  | String
-  | Boolean
-  | Tcustom of string * typ list
-  | Tarrow of typ list*typ
-  | Tvar of tvar
-  | Tgeneral of string
 
-and tvar = {id : int; mutable def : typ option}
 
 
 
@@ -136,17 +137,7 @@ let print_bool b =
   if b then print_endline "true"
   else print_endline "false"
 
-(*
-let globalenvfunctions = Smap.add "not" {flidents = []; instancelist = []; typlist = [Boolean];typ = Boolean;matching = []} Smap.empty
-let globalenvfunctions = Smap.add "mod" {flidents = []; instancelist = []; typlist = [Int;Int];typ = Int;matching = []} globalenvfunctions
-let globalenvfunctions = Smap.add "log" {flidents = []; instancelist = []; typlist = [String];typ = Effect(Unit);matching = []} globalenvfunctions
-let globalenvfunctions = Smap.add "pure" {flidents = ["a"]; instancelist = []; typlist = [Tenv "a"];typ = Effect(Tenv "a");matching = []} globalenvfunctions
 
-let globalenvclasses = Smap.add "Show" {variablesdetypes = ["a"]; fonctionsdeclasse = [("show",[Tenv "a";String])]} Smap.empty
-let globalenvfunctions = Smap.add "show" {flidents = ["a"]; instancelist = []; typlist = [Tenv "a"];typ = String;matching = []} globalenvfunctions
-
-let globalenvinstances = Smap.add "Show" [([Boolean],{typinstancelist = []; typlist = [Boolean]; matching = []});([Int],{typinstancelist = []; typlist = [Int]; matching = []})]
-*)
 
 module V = struct
   type t = tvar
