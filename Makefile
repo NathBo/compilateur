@@ -5,12 +5,6 @@ ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_pars
 all: ppurs
 	@./ppurs test.purs
 
-V: ppurs
-	@./ppurs testV.purs
-N: ppurs
-	@./ppurs testN.purs
-
-
 tests1: ppurs
 	@./run-tests.sh -1 ./ppurs
 tests2: ppurs
