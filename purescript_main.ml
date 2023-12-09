@@ -80,7 +80,6 @@ let () =
 	try
 		let p = Purescript_parser.file Purescript_lexer.next_token buf in
 		close_in f;
-		Purescript_ast.print_file Format.std_formatter p;
 
 		if !parse_only then exit 0;
 		
@@ -103,5 +102,5 @@ let () =
 			exit 1
 		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e *)
 			localisation pos;
-			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^(string_of_int pos.startpos.pos_lnum) ^ " colonne "^(string_of_int pos.startpos.pos_bol) ^" : "^s ^ colorDefault);
+			eprintf "%s\n" (colorRed ^ "Erreur typage dans le fichier "^pos.startpos.pos_fname^" ligne "^(string_of_int pos.startpos.pos_lnum) ^ " colonne "^(string_of_int (pos.startpos.pos_cnum-pos.startpos.pos_bol)) ^" : "^s ^ colorDefault);
 			exit 1
