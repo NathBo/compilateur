@@ -32,7 +32,7 @@ Il reprend globalement la grammaire proposée pour le purscript. Mais doit gére
 Le premier problème vient de la règle :
 \[ \langle\text{tdecl}\rangle ::= \langle \text{lident}\rangle :: (\langle\text{ntype}\rangle =>)\text{* } (\langle\text{type}\rangle ->)\text{* } \langle\text{type}\rangle \]
 
-Dans ce cas, il n'est pas possible de juste reconnaître grâce à la règle suivante :
+Dans ce cas, il n'est pas possible de reconnaître $\langle\text{tdecl}\rangle$ avec à la règle suivante :
 \[  \text{list}(\text{ntype}, =>) \text{ list}(\text{type}, ->) \text{ type} \]
 En effet, cela provoque un conflit car le parser ne sait pas quand passer d'une liste à l'autre.
 
