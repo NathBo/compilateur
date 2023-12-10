@@ -83,7 +83,7 @@ let () =
 
 		if !parse_only then exit 0;
 		
-		Purescript_typage.typfile p;
+		let _ = Purescript_typage.typfile p in
 		
 		if !type_only then exit 0;
 
