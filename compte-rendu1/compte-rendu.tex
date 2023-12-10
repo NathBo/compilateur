@@ -32,7 +32,7 @@ Il reprend globalement la grammaire proposée pour le purscript. Mais doit gére
 Le premier problème vient de la règle :
 \[ \langle\text{tdecl}\rangle ::= \langle \text{lident}\rangle :: (\langle\text{ntype}\rangle =>)\text{* } (\langle\text{type}\rangle ->)\text{* } \langle\text{type}\rangle \]
 
-Dans ce cas, il n'est pas possible de reconnaître $\langle\text{tdecl}\rangle$ avec à la règle suivante :
+Dans ce cas, il n'est pas possible de juste reconnaître grâce à la règle suivante :
 \[  \text{list}(\text{ntype}, =>) \text{ list}(\text{type}, ->) \text{ type} \]
 En effet, cela provoque un conflit car le parser ne sait pas quand passer d'une liste à l'autre.
 
@@ -47,9 +47,50 @@ Le deuxième problème vient de deux dérivations possibles dans la grammaire. E
 Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaitre l'un des deux (en l'occurence le premier).
 
 
-\part*{Le typage : point de vue général}
+\part*{Le typage: point de vue général}
 
-Bonjour
+Pour chaque type de l'ast, on crée une fonction qui renvoie son type (par exemple typexpr)
+
+Pour vérifier qu'un fichier est bien typé, on appelle récursivement ces différentes fonctions en vérifiant systématiquement
+que les types sont bien cohérents (càd par exemple qu'on n'additionne pas 2 String)
+
+De plus, pour les patternes, on crée la focntion ensuretyppatern qui prend en argument un patterne et un type, vérifie
+que le patterne est bien cohérent avec le type et renvoie un environnement où on a ajouté les nouveaux ident apparus dans le patterne
+
+
+\part*{Le typage: les environnements}
+
+On va stocker le type de tous les ident dans des environnements locaux passées en paramètre à à peu près toutes les fonctions
+
+Il y a un environnement global pour les types (nommé envtyps) où sont stockés les types déclarés par data, auquel s'ajoute un environnement
+local qui contient les variables de type et passé en paramètre
+
+Les fonctions et les classes sont quant à elles sont stockées dans un environnement global (nommé respectivement globalenvfonctions et envclasses)
+
+De même que pour les types, Il y a un environnement global pour les instances (nommé globalenvinstances) où sont stockés les instances déclarées par Instance, auquel s'ajoute un environnement
+local qui contient les instances passées en paramètre aux fonctions et passé en paramètre (nommé envinstances)
+
+\part*{Le typage: gestion des instances}
+
+Quand une fonction f liée à une classe C est utilisée, on regarde une à une toutes les instances liées à C et on prend la
+première qui est cohérente avec les types des différents arguments de f
+
+Si on n'en trouve aucune, alors on retourne une erreur.
+
+
+
+\part*{Le typage: gestion des erreurs}
+
+L'ast est légèrement modifiée par rapport à la grammaire fournie de manière à associer à chaque type de l'ast une position dans le fichier
+
+Quand une erreur est détectée, on retourne cette position et on affiche le bout du fichier qui y correspond
+
+
+\part*{Le typage: ce qui n'a pas été codé}
+
+Les types d'arité >0 ne marchent pas très bien, en particulier les fichiers queens2.purs, pascal.purs et ral.purs ne typent pas
+
+Normalement, tout le reste fonctionne.
 
 
 
