@@ -16,6 +16,5 @@ testsAll: ppurs
 clean:
 	@dune clean
 	@rm ppurs -f
-all: ppurs
 
 .PHONY: all clean
