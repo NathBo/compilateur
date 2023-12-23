@@ -319,5 +319,3 @@ let print_in_file ~file p =
   let fmt = formatter_of_out_channel c in
   print_program fmt p;
   close_out c
-
-This document was generated using caml2html 

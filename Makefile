@@ -1,4 +1,4 @@
-ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_parser.mly purescript_typage.ml
+ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_parser.mly purescript_typage.ml purescript_production_code.ml
 	@dune build
 	@mv purescript_main.exe ppurs
 

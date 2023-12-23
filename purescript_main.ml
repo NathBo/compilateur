@@ -83,11 +83,12 @@ let () =
 
 		if !parse_only then exit 0;
 		
-		let _ = Purescript_typage.typfile p in
+		let typ = Purescript_typage.typfile p in
 		
 		if !type_only then exit 0;
-
-		(* ajouter ici la production de code assembleur *)
+                
+                let programe = Purescript_production_code.genere_code typ in
+                X86_64.print_program Format.std_formatter programe;
 
 		exit 0
 
