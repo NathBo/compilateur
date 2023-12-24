@@ -82,6 +82,8 @@ let () =
 		close_in f;
 
 		if !parse_only then exit 0;
+
+		Purescript_ast.print_file Format.std_formatter p;
 		
 		let typ = Purescript_typage.typfile p in
 		

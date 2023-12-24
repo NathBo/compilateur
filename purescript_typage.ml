@@ -302,6 +302,7 @@ let lastdefined = ref ""
 
 
 let (deflist:defn list ref) = ref []
+let (tdeflist:tdefn list ref) = ref []
 
 
 let smaptolist sm =
@@ -348,24 +349,31 @@ let rec grosand l = match l with
   | b::q -> b&&(grosand q)
 
 
+let rec listmapl f l = match l with
+    | [] -> []
+    | x::q -> let a = (f x) in a@ listmapl f q
+
+
+
+
 
 
 let rec typfile f =
   let env = add "unit" Unit empty in
   let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
-  let arbretype = List.map (typdecl env envtyps !globalenvinstances) f.decls in
+  let arbretype = listmapl (typdecl env envtyps !globalenvinstances) f.decls in
   checkforenddef !envtyps !globalenvinstances f.pos;
   if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else arbretype
 
 
 and typdecl env envtyps envinstances d = match d with
-  | Dtdecl (td,pos) -> checkforenddef !envtyps !globalenvinstances pos;let a,b,c,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,c) !envfonctions;TDtdecl(d)
+  | Dtdecl (td,pos) -> checkforenddef !envtyps !globalenvinstances pos;let a,b,c,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,c) !envfonctions;[TDtdecl(d)]
   | Ddefn (df,pos) -> (match fstr(smapfind df.ident !envfonctions pos) with
-    | Tarrow(tlist,t) -> let rep = typdfn env !envtyps !globalenvinstances true df tlist t in TDdefn(rep)
+    | Tarrow(tlist,t) -> let rep = typdfn env !envtyps !globalenvinstances true df tlist t in [TDdefn(rep)]
     | _ -> failwith "pas possible")
-  | Ddata (s,slist,ialist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typdata env envtyps envinstances pos s slist ialist in TDdata(s,slist,rep)
-  | Dclass (s,slist,tdlist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typclass env !envtyps !globalenvinstances pos s slist tdlist in TDclass(s,slist,rep)
-  | Dinstance (i,deflist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let ti,tdl = typinstance env !envtyps !globalenvinstances i deflist in TDinstance(ti,tdl)
+  | Ddata (s,slist,ialist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typdata env envtyps envinstances pos s slist ialist in [TDdata(s,slist,rep)]
+  | Dclass (s,slist,tdlist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typclass env !envtyps !globalenvinstances pos s slist tdlist in [TDclass(s,slist,rep)]
+  | Dinstance (i,deflist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let ti,tdl = typinstance env !envtyps !globalenvinstances i deflist in [TDinstance(ti,tdl)]
 
 
 
@@ -388,8 +396,8 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
     let t,e' = typexpr env envtyps envinstances  general e in (t,TElet(el,e',t))
   | Ecase (e,blist,pos) -> let t,e' = typexpr env envtyps envinstances general e in (match blist with
     | [] -> typingerror "Pattern vide" pos
-    | b::q -> let t',_ = typbranch env envtyps envinstances t general b in List.iter (fun x-> if fst(typbranch env envtyps envinstances t general x) <> t' then typingerror "bad pattern type" pos else ()) q;
-    if not (checkexaustivelist env envtyps envinstances [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then typingerror "Pattern non exhaustif" pos else (t',TEcase(e',List.map (fun (b:branch) -> {tpattern = TPpatarg(TPlident("a")); texpr = TEatom(TAlident("a",Boolean),Boolean)} ) blist,t))
+    | b::q -> let t',_ = typbranch env envtyps envinstances t general b in let l = List.map (fun x-> let a,b = typbranch env envtyps envinstances t general x in if a <> t' then typingerror "bad pattern type" pos else b) q in
+    if not (checkexaustivelist env envtyps envinstances [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then typingerror "Pattern non exhaustif" pos else (t',TEcase(e',l,t))
   )
   | Elident (f,alist,pos) -> let envinstances = Smap.union noconseqconflit envinstances (fourth (smapfind f !envfonctions pos))  in if mem f env then typingerror (f^" n'est pas une fonction") pos
   else ((match thrd (smapfind f !envfonctions pos) with
@@ -464,9 +472,11 @@ and typconstant env envtyps envinstances c = match c with
 
 and typbranch env envtyps envinstances t (general:bool) b =
   let conflit s a _ = Some a in
-  let env = envunion conflit (fst(ensuretyppattern empty envtyps envinstances t b.pattern)) env in
+  let a,tp = ensuretyppattern empty envtyps envinstances t b.pattern in
+  let env = envunion conflit a env in
   print_bool (mem "s" env);
-  typexpr env envtyps envinstances general b.expr
+  let t,texp = typexpr env envtyps envinstances general b.expr in
+  t,{tpattern = tp;texpr = texp}
 
 and ensuretyppattern env envtyps envinstances t p = match p with
   | Ppatarg (p,pos) -> let env2,p' = ensuretyppatarg env envtyps envinstances t p in (env2,TPpatarg(p'))
@@ -531,7 +541,7 @@ and checkexaustivelist env envtyps envinstances tlist plistlist =
     | (Pmulpatarg (_,x,pos)::_)::q -> (List.map (fun t -> Ppatarg (t,pos)) x)::getthelists q
     | (Ppatarg(Puident _,pos)::_)::q -> getthelists q
     | (Ppatarg(Ppattern (p,pos),_)::a)::q -> getthelists ((p::a)::q)
-    | _ -> failwith "bah alors mais d'ou ca arrive ca" in       (*plus sur de pk cette erreur est la*)
+    | _ -> failwith "pas censé arriver" in       
   let rec aux i l =
     if l = [] then false
     else if i>=List.length tlist
@@ -597,7 +607,9 @@ else
   let env,pl = aux env envtyps patarglist tlist in
   if fst(typexpr env envtyps envinstances addtodeflist df.expr)<>t
   then (typingerror ("pas le type censé etre renvoyé par "^ (df.ident)) df.pos)
+  else if addtodeflist then (let a = {tident = df.ident;tpatargs = pl;texpr = snd(typexpr env envtyps envinstances addtodeflist df.expr)} in tdeflist := a:: (!tdeflist);a)
   else {tident = df.ident;tpatargs = pl;texpr = snd(typexpr env envtyps envinstances addtodeflist df.expr)})
+
 
 and typdata env envtyps envinstances pos s slist ialist =
   if Smap.mem s !envtyps then typingerror ("conflit dans la définition du type "^s) pos
@@ -642,13 +654,23 @@ and checkforenddef envtyps envinstances pos =
       | [] -> typingerror ("La déclaration de "^(!lastdefined)^" doit être suivie de sa définition") pos;
       | x::q -> let posdufiltrage = getchanging false 0 x.patargs in 
         if posdufiltrage = -1
-        then (if List.length !deflist >1 then typingerror (!lastdefined^" est définie 2 fois") pos else lastdefined := ""; deflist := [])
+        then (if List.length !deflist >1 then typingerror (!lastdefined^" est définie 2 fois") pos else ())
         else(match fstr(smapfind !lastdefined !envfonctions pos) with
-      | Tarrow(tlist,t) -> if not (checkexaustivelist empty envtyps envinstances [(List.nth tlist posdufiltrage)] (List.map (fun x -> [x]) (List.map (aux posdufiltrage) !deflist))) then typingerror ("Patterne non exhaustif dans la definition de "^(!lastdefined)) pos;
-      lastdefined := ""; deflist := []
+      | Tarrow(tlist,t) -> if not (checkexaustivelist empty envtyps envinstances [(List.nth tlist posdufiltrage)] (List.map (fun x -> [x]) (List.map (aux posdufiltrage) !deflist))) then typingerror ("Patterne non exhaustif dans la definition de "^(!lastdefined)) pos;      
       | _ -> failwith "pas possible")
-  end
-
+  ;
+  let posdufiltrage = getchanging false 0 (List.hd !deflist).patargs in
+  if posdufiltrage <> -1
+  then begin
+  let tlist = ref [] in
+  let t = ref Int in
+  (match fstr(smapfind !lastdefined !envfonctions pos) with
+      | Tarrow(tl,t) -> tlist := tl
+      | _ -> failwith "pas possible");
+  let blist = List.map (fun d -> {tpattern = TPpatarg( (List.nth d.tpatargs posdufiltrage)); texpr = d.texpr}) !tdeflist in
+  let _ = TEcase(TEatom(TAlident("$matching$",List.nth !tlist posdufiltrage),List.nth !tlist posdufiltrage),blist,!t) in
+  lastdefined := "";tdeflist := []; deflist := []
+  end else (lastdefined := "";tdeflist := []; deflist := []) end
 
 and typclass env envtyps envinstances pos s slist tdlist =
   if Smap.mem s !envclasses
