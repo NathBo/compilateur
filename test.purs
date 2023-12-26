@@ -1,9 +1,16 @@
 module Main where
+
 import Prelude
 import Effect
 import Effect.Console
 
-f:: Int -> Int -> Int
-f _ _ = 42
+data T = A | B
+
+foo:: T -> String
+foo A = "hello"
+foo B = "world"
+
 main :: Effect Unit
-main = log ""
+main = do log (foo A)
+          log (foo B)
+

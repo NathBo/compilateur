@@ -362,18 +362,18 @@ let rec typfile f =
   let env = add "unit" Unit empty in
   let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
   let arbretype = listmapl (typdecl env envtyps !globalenvinstances) f.decls in
-  checkforenddef !envtyps !globalenvinstances f.pos;
-  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else arbretype
+  let a = checkforenddef env !envtyps !globalenvinstances f.pos in
+  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else arbretype@a
 
 
 and typdecl env envtyps envinstances d = match d with
-  | Dtdecl (td,pos) -> checkforenddef !envtyps !globalenvinstances pos;let a,b,c,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,c) !envfonctions;[TDtdecl(d)]
+  | Dtdecl (td,pos) -> let ab = checkforenddef env !envtyps !globalenvinstances pos in let a,b,c,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,c) !envfonctions;ab@[TDtdecl(d)]
   | Ddefn (df,pos) -> (match fstr(smapfind df.ident !envfonctions pos) with
     | Tarrow(tlist,t) -> let rep = typdfn env !envtyps !globalenvinstances true df tlist t in [TDdefn(rep)]
     | _ -> failwith "pas possible")
-  | Ddata (s,slist,ialist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typdata env envtyps envinstances pos s slist ialist in [TDdata(s,slist,rep)]
-  | Dclass (s,slist,tdlist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let rep = typclass env !envtyps !globalenvinstances pos s slist tdlist in [TDclass(s,slist,rep)]
-  | Dinstance (i,deflist,pos) -> checkforenddef !envtyps !globalenvinstances pos;let ti,tdl = typinstance env !envtyps !globalenvinstances i deflist in [TDinstance(ti,tdl)]
+  | Ddata (s,slist,ialist,pos) -> let a = checkforenddef env !envtyps !globalenvinstances pos in let rep = typdata env envtyps envinstances pos s slist ialist in a@[TDdata(s,slist,rep)]
+  | Dclass (s,slist,tdlist,pos) -> let a = checkforenddef env !envtyps !globalenvinstances pos in let rep = typclass env !envtyps !globalenvinstances pos s slist tdlist in a@[TDclass(s,slist,rep)]
+  | Dinstance (i,deflist,pos) -> let a = checkforenddef env !envtyps !globalenvinstances pos in let ti,tdl = typinstance env !envtyps !globalenvinstances i deflist in a@[TDinstance(ti,tdl)]
 
 
 
@@ -633,7 +633,7 @@ else
   aux2 ialist;List.map (fun (s,l) -> s,List.map (fun a -> snd(typatype env !envtyps envinstances a)) l) ialist
   
 
-and checkforenddef envtyps envinstances pos = 
+and checkforenddef (env:env) envtyps envinstances pos = 
   let rec isanident p = match p with
     | Plident (s,pos) -> true
     | Ppattern (Ppatarg (p,_) ,pos) -> isanident p
@@ -646,7 +646,7 @@ and checkforenddef envtyps envinstances pos =
   let rec aux posdufiltrage (df:defn) =
     Ppatarg (List.nth df.patargs posdufiltrage,pos) in
   if !lastdefined = ""
-  then ()
+  then []
   else begin let conflit s _ _ = (typingerror ("conflit dans les forall avec "^s)) pos in
   let envtyps = Smap.union conflit envtyps (sndr (smapfind !lastdefined !envfonctions pos)) in
   deflist := List.rev !deflist;
@@ -656,7 +656,7 @@ and checkforenddef envtyps envinstances pos =
         if posdufiltrage = -1
         then (if List.length !deflist >1 then typingerror (!lastdefined^" est définie 2 fois") pos else ())
         else(match fstr(smapfind !lastdefined !envfonctions pos) with
-      | Tarrow(tlist,t) -> if not (checkexaustivelist empty envtyps envinstances [(List.nth tlist posdufiltrage)] (List.map (fun x -> [x]) (List.map (aux posdufiltrage) !deflist))) then typingerror ("Patterne non exhaustif dans la definition de "^(!lastdefined)) pos;      
+      | Tarrow(tlist,t) -> if not (checkexaustivelist env envtyps envinstances [(List.nth tlist posdufiltrage)] (List.map (fun x -> [x]) (List.map (aux posdufiltrage) !deflist))) then typingerror ("Patterne non exhaustif dans la definition de "^(!lastdefined)) pos;      
       | _ -> failwith "pas possible")
   ;
   let posdufiltrage = getchanging false 0 (List.hd !deflist).patargs in
@@ -665,12 +665,14 @@ and checkforenddef envtyps envinstances pos =
   let tlist = ref [] in
   let t = ref Int in
   (match fstr(smapfind !lastdefined !envfonctions pos) with
-      | Tarrow(tl,t) -> tlist := tl
+      | Tarrow(tl,ty) -> tlist := tl;t := ty
       | _ -> failwith "pas possible");
   let blist = List.map (fun d -> {tpattern = TPpatarg( (List.nth d.tpatargs posdufiltrage)); texpr = d.texpr}) !tdeflist in
-  let _ = TEcase(TEatom(TAlident("$matching$",List.nth !tlist posdufiltrage),List.nth !tlist posdufiltrage),blist,!t) in
-  lastdefined := "";tdeflist := []; deflist := []
-  end else (lastdefined := "";tdeflist := []; deflist := []) end
+  let e = TEcase(TEatom(TAlident("$matching$",List.nth !tlist posdufiltrage),List.nth !tlist posdufiltrage),blist,!t) in
+  let d = List.hd !tdeflist in
+  let rep = {tpatargs = replace_in_dfn 0 d.tpatargs posdufiltrage;tident = d.tident;texpr = e} in
+  lastdefined := "";tdeflist := []; deflist := []; [TDdefn(rep)]
+  end else (lastdefined := "";tdeflist := []; deflist := []; []) end
 
 and typclass env envtyps envinstances pos s slist tdlist =
   if Smap.mem s !envclasses
@@ -679,6 +681,12 @@ and typclass env envtyps envinstances pos s slist tdlist =
   let rep = List.map (fun td -> let a,b,d,e = typtdecl env envtyps envinstances td in lastdefined := "";deflist := [];classenvfonctions := Smap.add td.dident a !classenvfonctions;envfonctions := Smap.add td.dident (a,b,Some s,d) !envfonctions;e)
       (List.map (fun {dident = dident; identlist = identlist; ntypelist = ntypelist;purtypelist = purtypelist;purtype = purtype} -> {dident = dident; identlist = slist; ntypelist = ntypelist;purtypelist = purtypelist;purtype = purtype;pos = pos}) tdlist) in
   envclasses := Smap.add s (slist,!classenvfonctions,[]) !envclasses;globalenvinstances := Smap.add s [] !globalenvinstances;rep
+
+and replace_in_dfn i ptlist posdufiltrage = match ptlist with
+  | x::q when i <> posdufiltrage -> x::replace_in_dfn (i+1) q posdufiltrage
+  | _::q -> TPlident ("$matching$")::replace_in_dfn (i+1) q posdufiltrage
+  | [] -> []
+
 
 
 and noconseqconflit _ a _ = Some a
