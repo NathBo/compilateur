@@ -13,12 +13,12 @@ tests2: ppurs
 testsAll: ppurs
 	@./run-tests.sh -all ./ppurs
 run: ppurs
-	./ppurs test.purs > file.s
-	gcc -no-pie file.s -o file
-	./file
+	./ppurs test.purs 
+	gcc -no-pie test.s -o test
+	./test
 
 clean:
 	@dune clean
-	@rm ppurs -f
+	@rm ppurs test.s test -f
 
 .PHONY: all clean

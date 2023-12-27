@@ -1,7 +1,7 @@
 open X86_64
 
 let genere_code arbre_typage =
-    let data = (label "message") ++ (string "le nombre es %d.\n") in
+    let data = (label "message") ++ (string "le nombre est %d.\n") in
     let print_int =
         label "print_int" ++
         movq (reg rdi) (reg rsi) ++
