@@ -1,6 +1,6 @@
-ppurs: purescript_main.ml purescript_ast.ml purescript_lexer.mll purescript_parser.mly purescript_typage.ml purescript_production_code.ml
+ppurs: src/purescript_main.ml src/purescript_ast.ml src/purescript_lexer.mll src/purescript_parser.mly src/purescript_typage.ml src/purescript_production_code.ml
 	@dune build
-	@mv purescript_main.exe ppurs
+	@mv src/purescript_main.exe ppurs
 
 all: ppurs
 	@./ppurs test.purs
