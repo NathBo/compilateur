@@ -369,7 +369,7 @@ let rec typfile f =
 and typdecl env envtyps envinstances d = match d with
   | Dtdecl (td,pos) -> let ab = checkforenddef env !envtyps !globalenvinstances pos in let a,b,c,d = typtdecl env !envtyps Smap.empty td in envfonctions := Smap.add td.dident (a,b,None,c) !envfonctions;ab@[TDtdecl(d)]
   | Ddefn (df,pos) -> (match fstr(smapfind df.ident !envfonctions pos) with
-    | Tarrow(tlist,t) -> let rep = typdfn env !envtyps !globalenvinstances true df tlist t in [TDdefn(rep)]
+    | Tarrow(tlist,t) -> let _ = typdfn env !envtyps !globalenvinstances true df tlist t in []
     | _ -> failwith "pas possible")
   | Ddata (s,slist,ialist,pos) -> let a = checkforenddef env !envtyps !globalenvinstances pos in let rep = typdata env envtyps envinstances pos s slist ialist in a@[TDdata(s,slist,rep)]
   | Dclass (s,slist,tdlist,pos) -> let a = checkforenddef env !envtyps !globalenvinstances pos in let rep = typclass env !envtyps !globalenvinstances pos s slist tdlist in a@[TDclass(s,slist,rep)]
