@@ -14,9 +14,9 @@ testsAll: ppurs
 	@./run-tests.sh -all ./ppurs
 run: ppurs
 	./ppurs test.purs 
+	@echo ""
 	gcc -no-pie test.s -o test
 	./test
-
 clean:
 	@dune clean
 	@rm ppurs test.s test -f

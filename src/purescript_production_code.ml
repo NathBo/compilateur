@@ -1,21 +1,33 @@
 open X86_64
+open Purescript_typage
 
-let genere_code arbre_typage =
-    let data = (label "message") ++ (string "le nombre est %d.\n") in
-    let print_int =
-        label "print_int" ++
-        movq (reg rdi) (reg rsi) ++
-        movq (ilab "message") (reg rdi) ++
+let code_initial =
+        globl "main" ++
+        label "log" ++
+        movq (ilab "printf_log") (reg rdi) ++
         call "printf" ++
         ret
-    in
-    let main =
-        label "main" ++
-        movq (imm 42) (reg rdi) ++
-        call "print_int" ++
-        movq (imm 0) (reg rax) ++
-        ret
-    in
-            
-    let text = print_int ++ main in
-    {text = (globl "main" ++ text) ; data = data}
+
+
+let genere_code arbre_typage =
+    let data = (label "printf_log") ++ (string "abdef\n") in
+    let text = List.fold_left (fun acc tvdec -> acc ++ match tvdec with
+        | TDtdecl _ -> nop
+        | TDdefn tdefn ->
+                label tdefn.tident ++
+                begin match tdefn.texpr with
+                | TElident (fct, args, typ) ->
+                        call fct
+                | _ -> 
+                        label tdefn.tident ++
+                        movq (imm 42) (reg rdi) ++
+                        call "log" ++
+                        movq (imm 0) (reg rax) ++
+                        ret
+                end ++
+                movq (imm 0) (reg rax) ++
+                ret
+        | _ -> failwith "ne sait pas encore faire"
+    ) code_initial arbre_typage in
+                   
+    {text = text ; data = data}
