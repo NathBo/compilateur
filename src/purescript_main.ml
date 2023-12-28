@@ -57,6 +57,14 @@ let localisation pos =
 	with
 		|End_of_file -> eprintf "File \"%s\", line %d, characters %d-%d:\n%s\n" !ifile l c_1 c_1 (colorGreen ^ "End_of_file" ^ colorDefault)
 
+let str_replace pattern repl text =
+        let result = ref text in
+        let patternLen = String.length pattern in
+        for beg = 0 to (String.length text - patternLen) do
+                if String.equal pattern (String.sub text beg patternLen) then
+                        result := (String.sub text 0 beg)^repl^(String.sub text (beg+patternLen) (String.length text - patternLen - beg))
+	done;
+	!result
 
 
 let () =
@@ -90,7 +98,12 @@ let () =
 		if !type_only then exit 0;
                 
                 let programe = Purescript_production_code.genere_code typ in
-                X86_64.print_program Format.std_formatter programe;
+
+                let fout = open_out (str_replace ".purs" ".s" !ifile) in
+
+                (* X86_64.print_program Format.std_formatter programe; *)
+                X86_64.print_program (Format.formatter_of_out_channel fout) programe;
+                close_out fout;
 
 		exit 0
 
