@@ -181,7 +181,7 @@ and print_ualist fmt (u,alist) =
 	fprintf fmt "%s (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_atype) alist
 
 and print_decl fmt d = match d with
-	| Ddata (u,llist,ua,_) -> fprintf fmt "typconstant env envtyps envinstances c%s (@[<hov>%a@]) = (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) llist
+	| Ddata (u,llist,ua,_) -> fprintf fmt "data %s (@[<hov>%a@]) = (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) llist
 	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ualist) ua
 	| Dclass (u,llist,tlist,_) -> fprintf fmt "%s (@[<hov>%a@]) where {@[<hov>%a@]}" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) llist
 	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tdecl) tlist

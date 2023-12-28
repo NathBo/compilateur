@@ -14,9 +14,9 @@ and tvar = {id : int; mutable def : typ option}
 
 
 type tfile =
-  {timports : timports; tdecls : tdecl list}
+  {timports : timports; tvdecls : tvdecl list}
 
-and timports = Import
+and timports = TImport
 
 and tvdecl =
   | TDdefn of tdefn
@@ -86,6 +86,81 @@ and tbranch =
   {tpattern : tpattern; texpr : texpr}
 
 
+open Format
+
+let print_tconstant fmt c = match c with
+	| TCbool (b) -> fprintf fmt "boolean %s" (string_of_bool b)
+	| TCint (n) -> fprintf fmt "int %d" n
+	| TCstring (s) -> fprintf fmt "string %s" s
+
+let rec print_tatom fmt a = match a with
+	| TAconstant (c,_) -> fprintf fmt "%a" print_tconstant c
+	| TAlident (l,_) | TAuident (l,_) -> fprintf fmt "%s" l
+	| TAexpr (e,_) -> fprintf fmt "%a" print_texpr e
+	| TAexprtype (e,t,_) -> fprintf fmt "%a :: %a" print_texpr e print_tpurtype t
+
+and print_texpr fmt e = match e with
+	| TEbinop (b,e1,e2,_) -> fprintf fmt "(%a %a %a)" print_texpr e1 print_binop b print_texpr e2
+	| TElident (s,a,_) | TEuident (s,a,_) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tatom) a
+	| TEif (e1,e2,e3,_) -> fprintf fmt "if %a then %a else %a" print_texpr e1 print_texpr e2 print_texpr e3
+	| TEdo (e,_) -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_texpr) e
+	| TElet (b,e,_) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tbindings) b print_texpr e
+	| TEatom (a,_) -> print_tatom fmt a
+	| TEcase (e,b,_) -> fprintf fmt "case %a of {@[<hov>%a@]}" print_texpr e	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@") print_tbranch) b
+
+and print_tbindings fmt (b:tbinding) =
+	fprintf fmt "%s = %a" b.tident print_texpr b.tbindexpr
+
+and print_tbranch fmt b =
+	fprintf fmt "%a -> %a" print_tpattern b.tpattern print_texpr b.texpr
+
+and print_tpatarg fmt p =match p with
+	| TPconstant (c) -> fprintf fmt "%a" print_tconstant c
+	| TPlident (s) | TPuident (s) -> fprintf fmt "%s" s
+	| TPpattern (p) -> fprintf fmt "%a" print_tpattern p
+
+and print_tpattern fmt p = match p with
+	| TPpatarg (p) -> fprintf fmt "%a" print_tpatarg p
+	| TPmulpatarg (s,plist) -> fprintf fmt "%s(@[<hov>%a@])" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tpatarg) plist
+
+and print_tatype fmt a = match a with
+	| TAident (s) -> fprintf fmt "%s" s
+	| TApurtype (p) -> fprintf fmt "%a" print_tpurtype p
+
+and print_tntype fmt n =
+	fprintf fmt "%s(@[<hov>%a@])" n.tnident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tatype) n.tatypes
+
+and print_tpurtype fmt p = match p with
+	| TPatype (a) -> fprintf fmt "%a" print_tatype a
+	| TPntype (n) -> fprintf fmt "%a" print_tntype n
+
+and print_ttdecl fmt t =
+	fprintf fmt "%s :: forall @[<hov>%a@] (@[<hov>%a@]) => (@[<hov>%a@]) -> %a" t.tdident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) t.tidentlist
+	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tntype) t.tntypelist
+	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tpurtype) t.tpurtypelist print_tpurtype t.tpurtype
+
+and print_tinstance fmt i = match i with
+	| TIntype (n) -> fprintf fmt "%a" print_tntype n
+	| TIarrow (n1,n2) -> fprintf fmt "%a => %a" print_tntype n1 print_tntype n2
+	| TImularrow (nlist,n) -> fprintf fmt "(@[<hov>%a@]) => %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ") print_tntype) nlist print_tntype n
+
+and print_tdefn fmt d =
+	fprintf fmt "%s (@[<hov>%a@]) = %a" d.tident Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tpatarg) d.tpatargs print_texpr d.texpr
+
+and print_tualist fmt (u,alist) =
+	fprintf fmt "%s (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tatype) alist
+
+and print_tvdecl fmt d = match d with
+	| TDdata (u,llist,ua) -> fprintf fmt "data %s (@[<hov>%a@]) = (@[<hov>%a@])" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) llist
+	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tualist) ua
+	| TDclass (u,llist,tlist) -> fprintf fmt "%s (@[<hov>%a@]) where {@[<hov>%a@]}" u Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ident) llist
+	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_ttdecl) tlist
+	| TDinstance (i,dlist) -> fprintf fmt "%a where {[<hov>%a@]}" print_tinstance i Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tdefn) dlist
+	| TDtdecl (t) -> fprintf fmt "%a" print_ttdecl t
+	| TDdefn (d) -> fprintf fmt "%a" print_tdefn d
+
+and print_tfile fmt f =
+	fprintf fmt "@[<hov>%a@]" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")print_tvdecl) f.tvdecls
 
 
 
@@ -363,7 +438,7 @@ let rec typfile f =
   let envtyps = ref (smapaddlist Smap.empty (["Int";"String";"Unit";"Boolean";"Effect"],[(Int,0);(String,0);(Unit,0);(Boolean,0);(Tcustom("Effect",[Unit]),1)])) in
   let arbretype = listmapl (typdecl env envtyps !globalenvinstances) f.decls in
   let a = checkforenddef env !envtyps !globalenvinstances f.pos in
-  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else arbretype@a
+  if not (Smap.mem "main" !envfonctions) then typingerror "Pas de fonction main définie" f.pos else {timports = TImport; tvdecls = arbretype@a}
 
 
 and typdecl env envtyps envinstances d = match d with
@@ -650,6 +725,7 @@ and checkforenddef (env:env) envtyps envinstances pos =
   else begin let conflit s _ _ = (typingerror ("conflit dans les forall avec "^s)) pos in
   let envtyps = Smap.union conflit envtyps (sndr (smapfind !lastdefined !envfonctions pos)) in
   deflist := List.rev !deflist;
+  tdeflist := List.rev !tdeflist;
     match !deflist with
       | [] -> typingerror ("La déclaration de "^(!lastdefined)^" doit être suivie de sa définition") pos;
       | x::q -> let posdufiltrage = getchanging false 0 x.patargs in 
@@ -672,7 +748,7 @@ and checkforenddef (env:env) envtyps envinstances pos =
   let d = List.hd !tdeflist in
   let rep = {tpatargs = replace_in_dfn 0 d.tpatargs posdufiltrage;tident = d.tident;texpr = e} in
   lastdefined := "";tdeflist := []; deflist := []; [TDdefn(rep)]
-  end else (lastdefined := "";tdeflist := []; deflist := []; []) end
+  end else (let first = List.hd !tdeflist in lastdefined := "";tdeflist := []; deflist := []; [TDdefn(first)]) end
 
 and typclass env envtyps envinstances pos s slist tdlist =
   if Smap.mem s !envclasses

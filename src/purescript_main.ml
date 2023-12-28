@@ -91,13 +91,15 @@ let () =
 
 		if !parse_only then exit 0;
 
-		Purescript_ast.print_file Format.std_formatter p;
+		(*Purescript_ast.print_file Format.std_formatter p;*)
 		
 		let typ = Purescript_typage.typfile p in
+
+		Purescript_typage.print_tfile Format.std_formatter typ;
 		
 		if !type_only then exit 0;
                 
-                let programe = Purescript_production_code.genere_code typ in
+                let programe = Purescript_production_code.genere_code typ.tvdecls in
 
                 let fout = open_out (str_replace ".purs" ".s" !ifile) in
 
