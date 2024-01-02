@@ -27,5 +27,7 @@ and traduit_texpr = function
 let genere_code arbre_typage =
     let data = (label "printf_log") ++ (string "abdef\n") in
     let text = List.fold_left (fun acc tvdec -> acc ++ traduit_tddecl tvdec ) code_initial arbre_typage in
+
+    ignore (Purescript_allocation.typage_to_alloc arbre_typage);
                    
     {text = text ; data = data}
