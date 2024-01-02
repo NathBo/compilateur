@@ -9,6 +9,7 @@ type typ =
   | Tarrow of typ list*typ
   | Tvar of tvar
   | Tgeneral of string
+  | Tany
 
 and tvar = {id : int; mutable def : typ option}
 
@@ -26,6 +27,7 @@ and string_of_typ t = match t with
   | Tarrow (tl,t) -> "("^string_of_typlist tl^")"^string_of_typ t
   | Tvar v -> string_of_int v.id
   | Tgeneral s -> s
+  | Tany -> "any"
 
 
 type tfile =
@@ -211,6 +213,11 @@ let smapfind s smap pos =
   then Smap.find s smap
   else typingerror ("L'identificateur "^s^" n'est pas défini") pos
 
+let smapfind2 s smap pos =
+  if Smap.mem s smap
+    then Smap.find s smap
+    else typingerror ("L'identificateur "^s^" n'est quoicoupas défini") pos
+
 
 let string_to_list s = List.init (String.length s) (String.get s)
 
@@ -278,6 +285,7 @@ let unifyable tlist1 tlist2 =
   let (assoc:typ Smap.t ref) = ref Smap.empty in
   let rec aux tlist1 tlist2 = match tlist1,tlist2 with
     | [],[] -> true
+    | Tany::q1,_::q2 | _::q1,Tany::q2 -> aux q1 q2
     | Unit::q1,Unit::q2 | Int::q1,Int::q2 | String::q1,String::q2 | Boolean::q1,Boolean::q2 -> aux q1 q2
     | Tcustom(s1,l1)::q1,Tcustom(s2,l2)::q2 when s1 = s2 -> aux l1 l2 && aux q1 q2
     | Tgeneral s::q1,t::q2 -> if Smap.mem s !assoc
@@ -292,22 +300,26 @@ let unification tlist1 tlist2 pos =
   let (assoc:typ Smap.t ref) = ref Smap.empty in
   let rec aux tlist1 tlist2  = match tlist1,tlist2 with
     | [],[] -> ()
+    | Tany::q1,_::q2 | _::q1,Tany::q2 -> aux q1 q2
     | t1::q1,t2::q2 when t1=t2 -> aux q1 q2
     | Tcustom(s1,l1)::q1,Tcustom(s2,l2)::q2 when s1 = s2 -> aux l1 l2;aux q1 q2
     | Tgeneral s::q1,t::q2 -> if Smap.mem s !assoc
       then aux ((Smap.find s !assoc)::q1) (t::q2)
       else (assoc := Smap.add s t !assoc;aux q1 q2)
-      | t::q1,Tgeneral s::q2 -> aux tlist2 tlist1
-      | _ -> typingerror "Pas d'unification possible" pos in
+    | t::q1,Tgeneral s::q2 -> aux tlist2 tlist1
+    | t1::_,t2::_ -> typingerror ("Pas d'unification possible entre les types "^string_of_typ t1^" et "^string_of_typ t2) pos
+    | _ -> typingerror "Pas d'unification possible" pos in
   aux tlist1 tlist2;
   !assoc
 
+
+module Sset = Set.Make(String)
 
 module Vset = Set.Make(V)
 
 
 let rec fvars t = match head t with
-  | Unit | Int | String | Boolean -> Vset.empty
+  | Unit | Int | String | Boolean | Tany -> Vset.empty
   | Tcustom (_,tlist) -> List.fold_left Vset.union Vset.empty (List.map fvars tlist)
   | Tarrow (tlist,t2) -> Vset.union (List.fold_left Vset.union Vset.empty (List.map fvars tlist)) (fvars t2)
   | Tvar tv -> Vset.singleton tv
@@ -354,7 +366,7 @@ let find x env pos =
   in
   let rec subst t = match head t with
     | Tvar x as t -> (try Vmap.find x s with Not_found -> t)
-    | Int | String | Unit | Boolean -> t
+    | Int | String | Unit | Boolean | Tany -> t
     | Tcustom (s,tlist) -> Tcustom(s,List.map subst tlist)
     | Tarrow (tlist, t2) -> Tarrow (List.map subst tlist, subst t2)
     | Tgeneral s -> Tgeneral s
@@ -444,7 +456,12 @@ let rec listmapl f l = match l with
     | x::q -> let a = (f x) in a@ listmapl f q
 
 
-
+let rec compatible tl1 tl2 = match tl1,tl2 with
+  | [],[] -> true
+  | Tany::q1,_::q2 | _::q1,Tany::q2 -> compatible q1 q2
+  | Tcustom(s1,l1)::q1,Tcustom(s2,l2)::q2 when s1 = s2 -> compatible l1 l2 && compatible q1 q2
+  | t1::q1,t2::q2 -> t1 = t2 && compatible q1 q2
+  | _ -> false
 
 
 
@@ -565,7 +582,6 @@ and typbranch env envtyps envinstances t (general:bool) b =
   let conflit s a _ = Some a in
   let a,tp = ensuretyppattern empty envtyps envinstances t b.pattern in
   let env = envunion conflit a env in
-  print_bool (mem "s" env);
   let t,texp = typexpr env envtyps envinstances general b.expr in
   t,{tpattern = tp;texpr = texp}
 
@@ -578,21 +594,24 @@ and ensuretyppattern env envtyps envinstances t p = match p with
     else let rec aux envi plist tlist = match plist,tlist with
       | [],[] -> envi,[]
       | p::q1,t::q2 -> let a,p' = ensuretyppatarg env envtyps envinstances t p in
-        print_bool (mem "s" a);
         let conflit pos s _ _ = typingerror ("l'ident "^s^" est utilisé plusieurs fois") pos in
         let env,l = aux envi q1 q2 in
-        print_bool (mem "s" env);
         {bindings = Smap.union (conflit pos) a.bindings env.bindings; fvars = Vset.union a.fvars env.fvars},p'::l
       | _ -> typingerror ("pas la bonne taille de pattern dans l'utilisation du constructeur "^constr.cident) pos in
-    let env,plist' = aux env plist constr.ctlist in (env,TPmulpatarg(s,plist'))
+    let mapl = unification [t] [b] pos in
+    let rec replace mapl tl = match tl with
+      | Tgeneral s::q -> if Smap.mem s mapl then smapfind s mapl pos::replace mapl q else Tgeneral s::replace mapl q
+      | t::q -> t::replace mapl q
+      | [] -> [] in
+    let env,plist' = aux env plist (replace mapl constr.ctlist) in (env,TPmulpatarg(s,plist'))
       
 
 and ensuretyppatarg env envtyps envinstances t p = match p with
   | Pconstant (c,pos) -> let t',c' = typconstant env envtyps envinstances c in if not (unifyable [t'] [t]) then typingerror ("On s'attendait à du "^string_of_typ t^" mais du "^string_of_typ t'^" a été donné") pos else env,TPconstant(c')
   | Plident (s,pos) -> add s t env,TPlident(s)
   | Puident (s,pos) -> (print_typ t;match t,(smapfind s !envconstructors pos).ctyp with
-    | Tcustom(s1,l1),Tcustom(s2,l2) -> if s1<>s2 then typingerror (s^" n'est pas un constructeur du bon type custom") pos else env,TPuident(s)        (*à modifier*)
-    | t1,t2 -> if t1<>t2 then (typingerror ("On s'attendait à du "^string_of_typ t1^" mais "^s^" est un constructeur du type "^string_of_typ t2) pos )else env,TPuident(s))
+    | Tcustom(s1,[]),Tcustom(s2,[]) -> if s1<>s2 then typingerror (s^" est un constructeur du type "^s2^", or, le type "^s1^" était attendu") pos else env,TPuident(s)        
+    | t1,t2 -> if not(compatible [t1] [t2]) then (typingerror ("On s'attendait à du "^string_of_typ t1^" mais "^s^" est un constructeur du type "^string_of_typ t2) pos )else env,TPuident(s))
   | Ppattern (p,pos) -> let env,p' = ensuretyppattern env envtyps envinstances t p in env,TPpattern(p')
 
 and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s =
@@ -657,9 +676,9 @@ and typntype env envtyps envinstances n =
     | Tcustom (s,_) -> let alist = List.map (typatype env envtyps envinstances) n.atypes in Tcustom(s,List.map fst alist),{tnident = n.nident;tatypes = List.map snd alist}
     | _ -> let alist = List.map (typatype env envtyps envinstances) n.atypes in t,{tnident = n.nident;tatypes = List.map snd alist}
 
-and typatype (env:env) envtyps envinstances a = match a with
+and typatype (env:env) envtyps envinstances a = print_string "ok";print_bool (Smap.mem "a" envtyps);match a with
   | Apurtype (p,pos) -> let t,p' = typpurtyp env envtyps envinstances p in t,TApurtype(p')
-  | Aident (s,pos) -> let t,arite = smapfind s envtyps pos in if arite = 0 then t,TAident(s) else typingerror "devrait etre un type d'arite 0" pos
+  | Aident (s,pos) -> let t,arite = smapfind2 s envtyps pos in if arite = 0 then t,TAident(s) else typingerror "devrait etre un type d'arite 0" pos
 
 and typtdecl env envtyps envinstances td =
   if Smap.mem td.dident !envfonctions
@@ -712,18 +731,34 @@ else
   let rec aux envtyps l = match l with
     | [] -> envtyps
     | s::q -> aux (Smap.add s (Tgeneral s,0) envtyps) q in
-  let conflit pos s _ _ = (typingerror ("conflit dans les forall avec "^s)) pos in
+  let conflit s a _ = Some a in
   let envvartyps = aux Smap.empty slist in
-  let envtypsact = Smap.union (conflit pos) envvartyps !envtyps in
+  let envtypsact = Smap.union (conflit) envvartyps !envtyps in
   let t = Tcustom (s,List.map (fun s -> fst(smapfind s envvartyps pos)) slist) in
   envtyps := Smap.add s (t,List.length slist) !envtyps;
   let envtypsact = Smap.add s (t,List.length slist) envtypsact in
+  let rec mentionnesa alist = match alist with
+    | [] -> Sset.empty
+    | Aident(s,_)::q -> Sset.add s (mentionnesa q)
+    | Apurtype(p,_)::q -> Sset.union (mentionnesp p) (mentionnesa q)
+  and mentionnesp p = match p with
+    | Patype(a,_) -> mentionnesa [a]
+    | Pntype(n,_) -> mentionnesn n
+  and mentionnesn n =
+    Sset.add n.nident (mentionnesa n.atypes) in
+
+  let rec remplacer mentions t = match t with
+    | Tcustom(s,tl) ->  Tcustom(s,List.map (remplacer mentions) tl)
+    | Tgeneral(s) -> if Sset.mem s mentions then Tgeneral(s) else Tany
+    | t -> t in
+  
+
   let rec aux2 l = match l with
     | [] -> ()
     | (i,alist)::q -> if Smap.mem i !envconstructors
       then typingerror ("Le constructeur "^i^" est défini plusieurs fois") pos
-      else envconstructors := Smap.add i {cident = i; ctlist = List.map (fun a -> fst(typatype env envtypsact envinstances a)) alist; ctyp = t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
-  aux2 ialist;List.map (fun (s,l) -> s,List.map (fun a -> snd(typatype env !envtyps envinstances a)) l) ialist
+      else envconstructors := Smap.add i {cident = i; ctlist = List.map (fun a -> fst(typatype env envtypsact envinstances a)) alist; ctyp = remplacer (mentionnesa alist) t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
+  aux2 ialist;List.map (fun (s,l) -> s,List.map (fun a -> snd(typatype env envtypsact envinstances a)) l) ialist
   
 
 and checkforenddef (env:env) envtyps envinstances pos = 
