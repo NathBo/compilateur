@@ -13,6 +13,21 @@ type typ =
 and tvar = {id : int; mutable def : typ option}
 
 
+let rec string_of_typlist tl = match tl with
+  | t::q -> string_of_typ t^string_of_typlist q
+  | [] -> ""
+
+and string_of_typ t = match t with
+  | Unit -> "unit"
+  | Int -> "Int"
+  | String -> "String"
+  | Boolean -> "Boolean"
+  | Tcustom (s,tl) -> "("^string_of_typlist tl^")"^s
+  | Tarrow (tl,t) -> "("^string_of_typlist tl^")"^string_of_typ t
+  | Tvar v -> string_of_int v.id
+  | Tgeneral s -> s
+
+
 type tfile =
   {timports : timports; tvdecls : tvdecl list}
 
