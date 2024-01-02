@@ -469,7 +469,7 @@ and typdecl env envtyps envinstances d = match d with
 
 and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list Smap.t) (general:bool) expr = match expr with
   | Ebinop (b,e1,e2,pos) -> (let t1,e1' = typexpr env envtyps envinstances general e1 in let t2,e2' = typexpr env envtyps envinstances general e2 in match b with
-    | Bequals pos | Bnotequals pos ->  if List.mem t1 [Int;String;Boolean;Unit] then (if t1 <> t2 then typingerror "Mauvais type" pos else (Boolean,TEbinop (b,e1',e2',Boolean))) else typingerror "Mauvais type" pos
+    | Bequals pos | Bnotequals pos ->  if List.mem t1 [Int;String;Boolean;Unit] then (if t1 <> t2 then typingerror ("Les types "^string_of_typ t1^" et "^string_of_typ t2^" ne sont pas compatibles") pos else (Boolean,TEbinop (b,e1',e2',Boolean))) else typingerror ("Le type "^string_of_typ t1^" n'est pas compatible avec l'égalité") pos
     | Binf pos | Binfeq pos | Bsup pos | Bsupeq pos -> if t1 <> Int then typingerror "Mauvais type" pos else if t2 <> Int then typingerror "Mauvais type" pos else (Boolean,TEbinop (b,e1',e2',Boolean))
     | Bplus pos | Bminus pos | Btimes pos | Bdivide pos -> if t1 <> Int then typingerror "Mauvais type" pos else if t2 <> Int then typingerror "Mauvais type" pos else (Int,TEbinop(b,e1',e2',Int))
     | Bor pos | Band pos -> if t1 <> Boolean then typingerror "Mauvais type" pos else if t2 <> Boolean then typingerror "Mauvais type" pos else (Boolean,TEbinop(b,e1',e2',Boolean))
