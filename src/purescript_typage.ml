@@ -177,7 +177,7 @@ and print_tvdecl fmt d = match d with
 	| TDdefn (d) -> fprintf fmt "%a" print_tdefn d
 
 and print_tfile fmt f =
-	fprintf fmt "@[<hov>%a@]" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")print_tvdecl) f.tvdecls
+	fprintf fmt "@[<hov>%a@]\n" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")print_tvdecl) f.tvdecls
 
 
 
