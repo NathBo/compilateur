@@ -1,33 +1,52 @@
 open X86_64
-open Purescript_typage
+open Purescript_allocation
 
 let code_initial =
         globl "main" ++
+
         label "log" ++
-        movq (ilab "printf_log") (reg rdi) ++
+        (*movq (ilab "printf_log") (reg rdi) ++ *)
         call "printf" ++
+        ret ++
+        
+        label "show" ++
+        movq (ilab "string_show") (reg rax) ++
         ret
 
-let rec traduit_tddecl = function
-        | TDtdecl _ -> nop
-        | TDdefn tdefn -> traduit_tdefn tdefn
-        | _ -> failwith "ne sait pas encore faire"
-and traduit_tdefn tdefn =
-        label tdefn.tident ++
-        traduit_texpr tdefn.texpr ++
+
+
+
+
+let rec traduit_a_file file =
+        List.fold_left (fun acc tdecl -> acc ++ traduit_a_tdecl tdecl) code_initial file
+
+and traduit_a_tdecl = function
+        | A_defn x -> traduit_a_defn x
+
+and traduit_a_defn defn =
+        label defn.a_ident ++
+        traduit_a_expr defn.a_expr ++
         movq (imm 0) (reg rax) ++
         ret
-and traduit_texpr = function
-        | TElident (fct, args, typ) ->
-                call fct
-        | _ -> failwith "ne sait pas encore faire"
+and traduit_a_expr = function
+        | A_lident (fct, params, typ, addr) ->
+                List.fold_left (fun acc atom -> acc ++ traduit_a_atom atom) nop params ++
+                call fct ++ 
+                movq (reg rax) (reg rdi)
 
+and traduit_a_atom = function
+        | A_expr (expr, typ) -> traduit_a_expr expr
+        | A_constant (const, typ) ->
+                movq (imm 1) (reg rax)
 
 
 let genere_code arbre_typage =
-    let data = (label "printf_log") ++ (string "abdef\n") in
-    let text = List.fold_left (fun acc tvdec -> acc ++ traduit_tddecl tvdec ) code_initial arbre_typage in
+    let arbre_alloc = typage_to_alloc arbre_typage in
+    print_a_file Format.std_formatter arbre_alloc;
 
-    ignore (Purescript_allocation.typage_to_alloc arbre_typage);
+    let data = (label "printf_log") ++ (string "abdef\n") ++ (label "string_show") ++ (string "coucou\n") in
+    let text = traduit_a_file arbre_alloc in
+
+
                    
     {text = text ; data = data}
