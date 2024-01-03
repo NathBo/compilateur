@@ -717,7 +717,7 @@ else
     | _ -> typingerror "Pas le bon nombre d'arguments" df.pos in
   let env,pl = aux env envtyps patarglist tlist in
   let zzz = fst(typexpr env envtyps envinstances addtodeflist df.expr) in
-  if zzz<>t
+  if not (compatible [zzz] [t])
   then (typingerror ((df.ident)^" est censé renvoyer du "^string_of_typ t^" mais du "^string_of_typ zzz^" a été donné") df.pos)
   else if addtodeflist then (let a = {tident = df.ident;tpatargs = pl;texpr = snd(typexpr env envtyps envinstances addtodeflist df.expr)} in tdeflist := a:: (!tdeflist);a)
   else {tident = df.ident;tpatargs = pl;texpr = snd(typexpr env envtyps envinstances addtodeflist df.expr)})
@@ -899,14 +899,3 @@ and typinstance env envtyps envinstances i deflist = match i with
   | Iarrow (n1,n2,pos) -> typinstance env envtyps envinstances (Imularrow([n1],n2,pos)) deflist
   | Intype (n,pos) -> typinstance env envtyps envinstances (Imularrow([],n,pos)) deflist
   
-
-
-
-
-
-
-
-
-
-
-

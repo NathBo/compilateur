@@ -6,4 +6,3 @@ import Effect.Console
 
 main :: Effect Unit
 main = log (show 1)
-
