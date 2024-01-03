@@ -99,13 +99,13 @@ let () =
 		
 		if !type_only then exit 0;
                 
-                let programe = Purescript_production_code.genere_code typ.tvdecls in
+                (*let programe = Purescript_production_code.genere_code typ.tvdecls in
 
                 let fout = open_out (str_replace ".purs" ".s" !ifile) in
 
                 (* X86_64.print_program Format.std_formatter programe; *)
                 X86_64.print_program (Format.formatter_of_out_channel fout) programe;
-                close_out fout;
+                close_out fout;*)
 
 		exit 0
 
