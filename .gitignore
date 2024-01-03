@@ -12,3 +12,5 @@ ppurs
 *.fdb_latexmk
 *.fls
 *.log
+spago-project
+*.s

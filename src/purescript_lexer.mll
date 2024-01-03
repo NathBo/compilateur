@@ -108,7 +108,8 @@ and string = parse
 		{ Buffer.add_char string_buffer '\n'; string lexbuf }
 	| "\\\""
 		{ Buffer.add_char string_buffer '"'; string lexbuf }
-	| "\\" {string_ignore lexbuf}
+        | "\\\\" { Buffer.add_char string_buffer '\\' ; string lexbuf }
+        | "\\" { string_ignore lexbuf}
 	| eof | "\n"
 		{ raise (Lexing_error "unterminated string") }
 	| _ as c
@@ -116,8 +117,9 @@ and string = parse
 and string_ignore = parse
 	| "\\" {string lexbuf}
 	| '\n' { new_line lexbuf; string_ignore lexbuf }
-	| _ {string_ignore lexbuf}
+	| ' ' | '\t' | '\n' {string_ignore lexbuf}
 	| eof	{ raise (Lexing_error "unterminated string") }
+        | _ { raise (Lexing_error "this is not a blank caracter") }
 
 and commentMany = parse
 	| "-}" { next_tokens lexbuf }
