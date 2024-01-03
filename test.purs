@@ -4,6 +4,7 @@ import Prelude
 import Effect
 import Effect.Console
 
+<<<<<<< HEAD
 -- triangle de Pascal modulo 7
 
 data List a = Nil | Cons a (List a)
@@ -31,3 +32,7 @@ main = pascal Nil 0 42
 
 
 
+=======
+main :: Effect Unit
+main = log (show 1)
+>>>>>>> refs/remotes/origin/main
