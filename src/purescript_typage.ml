@@ -379,7 +379,7 @@ let mem x env =
 
 
 
-type constructor = {cident : string; ctlist : typ list; ctyp : typ; cenvvartyps : (typ*int) Smap.t}
+type constructor = {cident : string; ctlist : typ list; ctyp : typ; cenvvartyps : (typ*int) Smap.t;catypes : atype list}
 
 let (envconstructors:(constructor Smap.t ref)) = ref Smap.empty
 
@@ -588,7 +588,10 @@ and typbranch env envtyps envinstances t (general:bool) b =
 and ensuretyppattern env envtyps envinstances t p = match p with
   | Ppatarg (p,pos) -> let env2,p' = ensuretyppatarg env envtyps envinstances t p in (env2,TPpatarg(p'))
   | Pmulpatarg (s,plist,pos) -> let constr = smapfind s !envconstructors pos in
-  let b = get_typ_constr_multi env envtyps envinstances constr plist t s in
+  let b = get_typ_constr_multi env envtyps envinstances constr plist t s pos in
+  print_endline "ok";
+  print_typ b;
+  print_typ t;
     if not (unifyable [t]  [b])
     then (typingerror ("On s'attendait à du "^string_of_typ t^" mais "^s^" est un constructeur du type "^string_of_typ b)) pos
     else let rec aux envi plist tlist = match plist,tlist with
@@ -608,22 +611,20 @@ and ensuretyppattern env envtyps envinstances t p = match p with
 
 and ensuretyppatarg env envtyps envinstances t p = match p with
   | Pconstant (c,pos) -> let t',c' = typconstant env envtyps envinstances c in if not (unifyable [t'] [t]) then typingerror ("On s'attendait à du "^string_of_typ t^" mais du "^string_of_typ t'^" a été donné") pos else env,TPconstant(c')
-  | Plident (s,pos) -> add s t env,TPlident(s)
-  | Puident (s,pos) -> (print_typ t;match t,(smapfind s !envconstructors pos).ctyp with
+  | Plident (s,pos) -> print_endline s;print_typ t;add s t env,TPlident(s)
+  | Puident (s,pos) -> (match t,(smapfind s !envconstructors pos).ctyp with
     | Tcustom(s1,[]),Tcustom(s2,[]) -> if s1<>s2 then typingerror (s^" est un constructeur du type "^s2^", or, le type "^s1^" était attendu") pos else env,TPuident(s)        
     | t1,t2 -> if not(compatible [t1] [t2]) then (typingerror ("On s'attendait à du "^string_of_typ t1^" mais "^s^" est un constructeur du type "^string_of_typ t2) pos )else env,TPuident(s))
   | Ppattern (p,pos) -> let env,p' = ensuretyppattern env envtyps envinstances t p in env,TPpattern(p')
 
-and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s =
+and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s pos =
   let t = constr.ctyp in
-  let t',_ = typpatarg env envtyps envinstances (List.hd plist) in
-  match tacomp with
-    | Tcustom(s,_::_) -> Tcustom(s,[t'])
-    | _ -> t
+  t
 
 and typpatarg env envtyps envinstances p = match p with
   | Pconstant (c,pos) -> let t,c' = typconstant env envtyps envinstances c in t,TPconstant(c')
   | Plident (s,pos) -> Tgeneral("a"),TPlident(s)
+  | Puident(s,pos) -> (Smap.find s !envconstructors).ctyp,TPuident(s) 
   | _ -> failwith "pas implémenté"
 
 
@@ -676,7 +677,7 @@ and typntype env envtyps envinstances n =
     | Tcustom (s,_) -> let alist = List.map (typatype env envtyps envinstances) n.atypes in Tcustom(s,List.map fst alist),{tnident = n.nident;tatypes = List.map snd alist}
     | _ -> let alist = List.map (typatype env envtyps envinstances) n.atypes in t,{tnident = n.nident;tatypes = List.map snd alist}
 
-and typatype (env:env) envtyps envinstances a = print_string "ok";print_bool (Smap.mem "a" envtyps);match a with
+and typatype (env:env) envtyps envinstances a = match a with
   | Apurtype (p,pos) -> let t,p' = typpurtyp env envtyps envinstances p in t,TApurtype(p')
   | Aident (s,pos) -> let t,arite = smapfind2 s envtyps pos in if arite = 0 then t,TAident(s) else typingerror "devrait etre un type d'arite 0" pos
 
@@ -757,7 +758,7 @@ else
     | [] -> ()
     | (i,alist)::q -> if Smap.mem i !envconstructors
       then typingerror ("Le constructeur "^i^" est défini plusieurs fois") pos
-      else envconstructors := Smap.add i {cident = i; ctlist = List.map (fun a -> fst(typatype env envtypsact envinstances a)) alist; ctyp = remplacer (mentionnesa alist) t; cenvvartyps = envvartyps} !envconstructors;aux2 q in
+      else envconstructors := Smap.add i {cident = i; ctlist = List.map (fun a -> fst(typatype env envtypsact envinstances a)) alist; ctyp = remplacer (mentionnesa alist) t; cenvvartyps = envvartyps;catypes = alist} !envconstructors;aux2 q in
   aux2 ialist;List.map (fun (s,l) -> s,List.map (fun a -> snd(typatype env envtypsact envinstances a)) l) ialist
   
 
