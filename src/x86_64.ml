@@ -144,6 +144,22 @@ let movb a b = ins "movb %a, %a" a () b ()
 let movw a b = ins "movw %a, %a" a () b ()
 let movl a b = ins "movl %a, %a" a () b ()
 let movq a b = ins "movq %a, %a" a () b ()
+(*let movq a b =
+        let formater_string = make_formatter
+                (Stdlib.output Format.oc)
+                (fun () -> Stdlib.flush oc)
+        in
+        let a_str = a formater_string () in
+        let b_str = b formater_string () in
+
+        match (a,b) with
+        | (_,_) -> ins "movq %a, %a" a () (reg rax) () ++ ins "movq %a, %a" (reg rax) () b () *)
+let movq2idx ofs1 reg1 ofs2 reg2 =
+        if (reg1 = reg2) && (ofs1 = ofs2) then nop
+        else 
+                let a = ind ~ofs:ofs1 reg1 in
+                let b = ind ~ofs:ofs2 reg2 in
+                ins "movq %a, %a" a () (reg rax) () ++ ins "movq %a, %a" (reg rax) () b ()
 
 let movabsq a b = ins "movabsq %a, %s" a () b
 
