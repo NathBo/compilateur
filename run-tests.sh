@@ -148,9 +148,9 @@ timeout="why3-cpulimit 30 0 -h"
 
 for f in tests/exec/*.purs; do
     echo -n "."
-    asm=exec/`basename $f .purs`.s
+    asm=tests/exec/`basename $f .purs`.s
     rm -f $asm
-    expected=exec/`basename $f .purs`.out
+    expected=tests/exec/`basename $f .purs`.out
     max=`expr $max + 1`;
     if compile $f; then
 	rm -f out
@@ -179,7 +179,7 @@ echo "-------------------------------"
 
 for f in tests/exec-fail/*.purs; do
     echo -n "."
-    asm=exec-fail/`basename $f .purs`.s
+    asm=tests/exec-fail/`basename $f .purs`.s
     rm -f $asm
     max=`expr $max + 1`;
     if compile $f && gcc -no-pie $asm; then

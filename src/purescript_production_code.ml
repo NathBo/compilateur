@@ -15,8 +15,27 @@ let code_initial =
         ret ++
         
         label "show" ++
-        movq (ilab "string_show") (reg rax) ++
-        ret
+        enter (imm 0) ++
+        movq (ind ~ofs:16 rbp) (reg r8) ++
+        cmpq (imm 0) (reg r8) ++
+        je "show_0" ++
+        cmpq (imm 1) (reg r8) ++
+        je "show_1" ++
+        cmpq (imm 2) (reg r8) ++
+        je "show_2" ++
+        cmpq (imm 3) (reg r8) ++
+        je "show_3" ++
+        cmpq (imm 4) (reg r8) ++
+        je "show_4" ++
+        movq (ilab "string_show_5") (reg rax) ++
+        leave ++
+        ret ++
+
+        label "show_0" ++ movq (ilab "string_show_0") (reg rax) ++ leave ++ ret ++
+        label "show_1" ++ movq (ilab "string_show_1") (reg rax) ++ leave ++ ret ++
+        label "show_2" ++ movq (ilab "string_show_2") (reg rax) ++ leave ++ ret ++
+        label "show_3" ++ movq (ilab "string_show_3") (reg rax) ++ leave ++ ret ++
+        label "show_4" ++ movq (ilab "string_show_4") (reg rax) ++ leave ++ ret
 
 
 let rec traduit_a_file file =
@@ -76,7 +95,7 @@ and traduit_a_atom = function
         | A_constant (const, typ, addr) ->
                 let cstPtr = match const with
                         | A_int i -> imm i
-                        | A_string s -> (ilab "string_show")
+                        | A_string s -> (ilab "string_constante")
                         | A_bool false -> imm 0
                         | A_bool true -> imm 1
                 in
@@ -87,7 +106,15 @@ let genere_code arbre_typage =
     let arbre_alloc = typage_to_alloc arbre_typage in
     print_a_file Format.std_formatter arbre_alloc;
 
-    let data = (label "printf_log") ++ (string "log -> %s\n") ++ (label "string_show") ++ (string "coucou") in
+    let data = (label "printf_log") ++ (string "%s\n") ++
+        (label "string_show_0") ++ (string "0") ++
+        (label "string_show_1") ++ (string "1") ++
+        (label "string_show_2") ++ (string "2") ++
+        (label "string_show_3") ++ (string "3") ++
+        (label "string_show_4") ++ (string "4") ++
+        (label "string_show_5") ++ (string "5") ++
+        (label "string_constante") ++ (string "blabla")
+    in
     let text = traduit_a_file arbre_alloc in
 
 
