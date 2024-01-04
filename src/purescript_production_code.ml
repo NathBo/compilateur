@@ -1,22 +1,21 @@
 open X86_64
 open Purescript_allocation
 
+let next_mult_16 a = a + (a mod 16)
+
 let code_initial =
         globl "main" ++
 
         label "log" ++
-        pushq (reg rbp) ++
-        movq (reg rsp) (reg rbp) ++
+        enter (imm 0) ++
         movq (ind ~ofs:16 rbp) (reg rsi) ++
         movq (ilab "printf_log") (reg rdi) ++
         call "printf" ++
-        popq rbp ++
+        leave ++
         ret ++
- 
         
         label "show" ++
         movq (ilab "string_show") (reg rax) ++
- 
         ret
 
 
@@ -28,16 +27,13 @@ and traduit_a_tdecl = function
 
 and traduit_a_defn defn =
         label defn.a_ident ++
-        pushq (reg rbp) ++
-        movq (reg rsp) (reg rbp) ++
-        subq (imm (abs defn.tableau_activation)) (reg rsp) ++
+        enter (imm (next_mult_16 (abs defn.tableau_activation))) ++
 
         traduit_a_expr defn.a_expr ++
 
-        addq (imm (abs defn.tableau_activation)) (reg rsp) ++
-        popq rbp ++
-        
         movq (imm 0) (reg rax) ++
+
+        leave ++
         ret
 
 and traduit_a_expr = function
@@ -48,15 +44,20 @@ and traduit_a_expr = function
                 )) nop params ++
 
                 (* placer les params au bon endroit *)
+                (* si nb impair de params *)
+                (if ((List.length params) mod 2) = 1 then pushq (imm 0) else nop) ++
+
                 List.fold_left (fun acc atom -> acc ++ (   (* reflechir au bon sens *)
                         pushq (ind ~ofs:(atom_adr atom) rbp)
                 )) nop params ++
 
                 (* appel recursif *)
                 call fct ++ 
+
                 List.fold_left (fun acc atom -> acc ++ (   (* reflechir au bon sens *)
                         popq r8
                 )) nop params ++
+                (if ((List.length params) mod 2) = 1 then popq r8 else nop) ++
 
 
                 movq (reg rax) (ind ~ofs:addr rbp)
@@ -73,7 +74,13 @@ and traduit_a_atom = function
                 traduit_a_expr expr ++
                 movq2idx addr_result rbp addr rbp
         | A_constant (const, typ, addr) ->
-                movq (imm 1) (ind ~ofs:addr rbp)
+                let cstPtr = match const with
+                        | A_int i -> imm i
+                        | A_string s -> (ilab "string_show")
+                        | A_bool false -> imm 0
+                        | A_bool true -> imm 1
+                in
+                movq cstPtr (ind ~ofs:addr rbp)
 
 
 let genere_code arbre_typage =

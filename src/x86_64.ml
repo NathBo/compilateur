@@ -254,6 +254,7 @@ let jmp_star o = ins "jmp *%a" o ()
 let call (z: label) = ins "call %a" mangle z
 let call_star z = ins "call *%a" z ()
 let leave = ins "leave"
+let enter a = ins "enter %a, $0" a ()
 let ret = ins "ret"
 
 let je (z: label) = ins "je %a" mangle z
