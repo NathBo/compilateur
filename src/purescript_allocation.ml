@@ -46,6 +46,9 @@ let expr_adr : a_expr -> int = function
 let atom_adr : a_atom -> int = function
         | A_constant (_,_,x) -> x
         | A_expr (_,_,x) -> x
+let atom_typ : a_atom -> typ = function
+        | A_constant (_,x,_) -> x
+        | A_expr (_,x,_) -> x
 
 
 

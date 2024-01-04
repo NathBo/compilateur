@@ -15,7 +15,7 @@ let code_initial =
         leave ++
         ret ++
         
-        label "show" ++
+        label "_show_int" ++
         enter (imm 0) ++
         movq (imm 100) (reg rdi) ++
         call "malloc" ++
@@ -32,31 +32,17 @@ let code_initial =
         leave ++
         ret ++
 
-
-
-(*
-
+        label "_show_bool" ++
         enter (imm 0) ++
-        movq (ind ~ofs:16 rbp) (reg r8) ++
-        cmpq (imm 0) (reg r8) ++
-        je "_show_0" ++
-        cmpq (imm 1) (reg r8) ++
-        je "_show_1" ++
-        cmpq (imm 2) (reg r8) ++
-        je "_show_2" ++
-        cmpq (imm 3) (reg r8) ++
-        je "_show_3" ++
-        cmpq (imm 4) (reg r8) ++
-        je "_show_4" ++
-        movq (ilab "_string_show_5") (reg rax) ++
+        cmpq (imm 0) (ind ~ofs:16 rbp) ++
+        je "_show_bool_false" ++
+        movq (ilab "_true") (reg rax) ++
         leave ++
-        ret ++ *)
-
-        label "_show_0" ++ movq (ilab "_string_show_0") (reg rax) ++ leave ++ ret ++
-        label "_show_1" ++ movq (ilab "_string_show_1") (reg rax) ++ leave ++ ret ++
-        label "_show_2" ++ movq (ilab "_string_show_2") (reg rax) ++ leave ++ ret ++
-        label "_show_3" ++ movq (ilab "_string_show_3") (reg rax) ++ leave ++ ret ++
-        label "_show_4" ++ movq (ilab "_string_show_4") (reg rax) ++ leave ++ ret
+        ret ++
+        label "_show_bool_false" ++
+        movq (ilab "_false") (reg rax) ++
+        leave ++
+        ret
 
 
 let rec traduit_a_file file =
@@ -92,7 +78,15 @@ and traduit_a_expr = function
                 )) nop params ++
 
                 (* appel recursif *)
-                call fct ++ 
+                let fct_string = match fct with
+                        | "show" -> begin
+                                match atom_typ (List.hd params) with
+                                        | Int -> "_show_int"
+                                        | Boolean -> "_show_bool"
+                                        | _ -> "_show_undeg"
+                                end
+                        | _ -> fct in
+                call fct_string ++ 
 
                 List.fold_left (fun acc atom -> acc ++ (   (* reflechir au bon sens *)
                         popq r8
@@ -129,14 +123,10 @@ let genere_code arbre_typage =
 
     let data =
         (label "_printf_log") ++ (string "%s\n") ++
-        (label "_string_show_0") ++ (string "0") ++
-        (label "_string_show_1") ++ (string "1") ++
-        (label "_string_show_2") ++ (string "2") ++
-        (label "_string_show_3") ++ (string "3") ++
-        (label "_string_show_4") ++ (string "4") ++
-        (label "_string_show_5") ++ (string "5") ++
         (label "_string_constante") ++ (string "blabla") ++
-        (label "_show_string_int") ++ (string "%dA")
+        (label "_show_string_int") ++ (string "%dA") ++
+        (label "_true") ++ (string "true") ++
+        (label "_false") ++ (string "false")
     in
     let text = traduit_a_file arbre_alloc in
 
