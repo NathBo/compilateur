@@ -48,7 +48,76 @@ let code_initial =
         label "_show_bool_false" ++
         movq (ilab "_false") (reg rax) ++
         leave ++
+        ret ++
+        
+        label "_divide" ++
+        enter (imm 0) ++
+        movq (ind ~ofs:16 rbp) (reg rax) ++
+        testq (reg rax) (reg rax) ++
+        js "_divide_neg" ++
+        movq (ind ~ofs:24 rbp) (reg rcx) ++
+        movq (imm 0) (reg rdx) ++
+        idivq (reg rcx) ++
+        leave ++
+        ret ++
+        label "_divide_neg" ++
+        movq (ind ~ofs:24 rbp) (reg rcx) ++
+        movq (imm (-1)) (reg rdx) ++
+        idivq (reg rcx) ++
+        testq (reg rdx) (reg rdx) ++
+        jnz "_divide_mod_1" ++
+        leave ++
+        ret ++
+        label "_divide_mod_1" ++
+        cmpq (imm 0) (ind ~ofs:24 rbp) ++
+        jg "_divide_neg_decr" ++
+        incq (reg rax) ++
+        leave ++
+        ret ++
+        label "_divide_neg_decr" ++
+        decq (reg rax) ++
+        leave ++
+        ret ++
+
+
+
+
+        label "mod" ++
+        enter (imm 0) ++
+        movq (ind ~ofs:16 rbp) (reg rax) ++
+        testq (reg rax) (reg rax) ++
+        js "_mod_neg" ++
+        movq (ind ~ofs:24 rbp) (reg rcx) ++
+        movq (imm 0) (reg rdx) ++
+        idivq (reg rcx) ++
+        movq (reg rdx) (reg rax) ++
+        leave ++
+        ret ++
+        label "_mod_neg" ++
+        movq (ind ~ofs:24 rbp) (reg rcx) ++
+        movq (imm (-1)) (reg rdx) ++
+        idivq (reg rcx) ++
+        testq (reg rdx) (reg rdx) ++
+        movq (reg rdx) (reg rax) ++
+        testq (reg rax) (reg rax) ++
+        jz "_mod_ret_0" ++
+        cmpq (imm 0) (ind ~ofs:24 rbp) ++
+        js "_mod_neg_neg" ++
+        addq (ind ~ofs:24 rbp) (reg rax) ++
+        leave ++
+        ret ++
+        label "_mod_neg_neg" ++
+        subq (ind ~ofs:24 rbp) (reg rax) ++
+        leave ++
+        ret ++
+        label "_mod_ret_0" ++
+        movq (imm 0) (reg rax) ++
+        leave ++
         ret
+
+
+
+
 
 let data = ref (
         (label "_printf_log") ++ (string "%s\n") ++
@@ -79,6 +148,9 @@ and traduit_a_defn defn =
         ret
 
 and traduit_a_expr = function
+        | A_atom (atm, typ, addr) ->
+                traduit_a_atom atm ++
+                movq2idx (atom_adr atm) rbp addr rbp
         | A_lident (fct, params, typ, addr) ->
                 (* calcul des params *)
                 List.fold_left (fun acc atom -> acc ++ (
@@ -89,9 +161,9 @@ and traduit_a_expr = function
                 (* si nb impair de params *)
                 (if ((List.length params) mod 2) = 1 then pushq (imm 0) else nop) ++
 
-                List.fold_left (fun acc atom -> acc ++ (   (* reflechir au bon sens *)
+                List.fold_left (fun acc atom -> (
                         pushq (ind ~ofs:(atom_adr atom) rbp)
-                )) nop params ++
+                ) ++ acc) nop params ++
 
                 (* appel recursif *)
                 let fct_string = match fct with
@@ -116,6 +188,29 @@ and traduit_a_expr = function
                         traduit_a_expr expr
                 )) nop lst ++
                 movq (imm 0) (ind ~ofs:addr rbp)
+        | A_binop (bi, e1, e2, typ, addr) ->
+                traduit_a_expr e1 ++
+                traduit_a_expr e2 ++
+                let e1_adr = expr_adr e1 in
+                let e2_adr = expr_adr e2 in
+                match bi with
+                        | Bplus _ ->
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                addq (ind ~ofs:e2_adr rbp) (reg r8) ++
+                                movq (reg r8) (ind ~ofs:addr rbp)
+                        | Bminus _ ->
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                subq (ind ~ofs:e2_adr rbp) (reg r8) ++
+                                movq (reg r8) (ind ~ofs:addr rbp)
+                        | Btimes _ ->
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                imulq (ind ~ofs:e2_adr rbp) (reg r8) ++
+                                movq (reg r8) (ind ~ofs:addr rbp)
+                        | Bdivide _ ->
+                                failwith "la division est maintenant une fonction"
+                                 
+                        | _ -> failwith "operation binaire pas encore suportee"
+
 
 
 and traduit_a_atom = function
