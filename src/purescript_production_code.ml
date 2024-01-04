@@ -10,11 +10,32 @@ let code_initial =
         enter (imm 0) ++
         movq (ind ~ofs:16 rbp) (reg rsi) ++
         movq (ilab "_printf_log") (reg rdi) ++
+        xorq (reg rax) (reg rax) ++
         call "printf" ++
         leave ++
         ret ++
         
         label "show" ++
+        enter (imm 0) ++
+        movq (imm 100) (reg rdi) ++
+        call "malloc" ++
+        movq (reg rax) (reg rdi) ++
+        movq (ilab "_show_string_int") (reg rsi) ++
+        xorq (reg rax) (reg rax) ++
+        movq (ind ~ofs:16 rbp) (reg rdx) ++
+        call "sprintf" ++
+        movq (reg rax) (reg r8) ++
+        movq (reg rdi) (reg rax) ++
+        subq (reg r8) (reg rax) ++
+        addq (reg rax) (reg r8) ++  (* to remove the last character *)
+        movb (imm 0) (ind ~ofs:(-1) r8) ++
+        leave ++
+        ret ++
+
+
+
+(*
+
         enter (imm 0) ++
         movq (ind ~ofs:16 rbp) (reg r8) ++
         cmpq (imm 0) (reg r8) ++
@@ -29,7 +50,7 @@ let code_initial =
         je "_show_4" ++
         movq (ilab "_string_show_5") (reg rax) ++
         leave ++
-        ret ++
+        ret ++ *)
 
         label "_show_0" ++ movq (ilab "_string_show_0") (reg rax) ++ leave ++ ret ++
         label "_show_1" ++ movq (ilab "_string_show_1") (reg rax) ++ leave ++ ret ++
@@ -114,7 +135,8 @@ let genere_code arbre_typage =
         (label "_string_show_3") ++ (string "3") ++
         (label "_string_show_4") ++ (string "4") ++
         (label "_string_show_5") ++ (string "5") ++
-        (label "_string_constante") ++ (string "blabla")
+        (label "_string_constante") ++ (string "blabla") ++
+        (label "_show_string_int") ++ (string "%dA")
     in
     let text = traduit_a_file arbre_alloc in
 
