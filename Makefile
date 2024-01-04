@@ -24,6 +24,8 @@ clean:
 	@dune clean
 	@rm ppurs test.s test -f
 	@rm tests/exec/*.s -f
+	@rm out -f
+	@rm a.out -f
 
 
 .PHONY: all clean
