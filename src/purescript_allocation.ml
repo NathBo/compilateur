@@ -35,7 +35,7 @@ and a_atom =
         | A_expr of a_expr * typ * int
 
 
-let creer_compteur () =
+let creer_8compteur () =
         let i = ref (-1) in
         (fun () -> (incr i; -(!i*8)))
 
@@ -61,7 +61,7 @@ and traduit_tvdecl = function
 
 and traduit_tdefn (x:tdefn) : a_defn =
         let a_patargs = (List.map traduit_tpatarg x.tpatargs) in
-        let cmpt = creer_compteur () in
+        let cmpt = creer_8compteur () in
         let a_expr = traduit_texpr cmpt x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}

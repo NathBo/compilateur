@@ -2,6 +2,12 @@ open X86_64
 open Purescript_allocation
 
 let next_mult_16 a = a + (a mod 16)
+let creer_compteur () =
+        let i = ref (-1) in
+        (fun () -> (incr i; !i))
+let compteur_str_const = creer_compteur ()
+
+
 
 let code_initial =
         globl "main" ++
@@ -43,6 +49,16 @@ let code_initial =
         movq (ilab "_false") (reg rax) ++
         leave ++
         ret
+
+let data = ref (
+        (label "_printf_log") ++ (string "%s\n") ++
+        (label "_string_constante") ++ (string "blabla") ++
+        (label "_show_string_int") ++ (string "%dA") ++
+        (label "_true") ++ (string "true") ++
+        (label "_false") ++ (string "false")
+)
+let add_data x =
+        data := !data ++ x
 
 
 let rec traduit_a_file file =
@@ -110,7 +126,9 @@ and traduit_a_atom = function
         | A_constant (const, typ, addr) ->
                 let cstPtr = match const with
                         | A_int i -> imm i
-                        | A_string s -> (ilab "_string_constante")
+                        | A_string s -> let label_name = "_str_const_"^(string_of_int (compteur_str_const ())) in
+                                        add_data ((label label_name) ++ (string s)) ;
+                                        (ilab label_name)
                         | A_bool false -> imm 0
                         | A_bool true -> imm 1
                 in
@@ -121,15 +139,6 @@ let genere_code arbre_typage =
     let arbre_alloc = typage_to_alloc arbre_typage in
     print_a_file Format.std_formatter arbre_alloc;
 
-    let data =
-        (label "_printf_log") ++ (string "%s\n") ++
-        (label "_string_constante") ++ (string "blabla") ++
-        (label "_show_string_int") ++ (string "%dA") ++
-        (label "_true") ++ (string "true") ++
-        (label "_false") ++ (string "false")
-    in
     let text = traduit_a_file arbre_alloc in
-
-
                    
-    {text = text ; data = data}
+    {text = text ; data = !data}
