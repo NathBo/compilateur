@@ -105,6 +105,9 @@ and traduit_texpr compteur env = function
                 match bi with
                 | Bdivide _ -> 
                         A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
+                | Bcons _ -> 
+                        A_lident ("_concat", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
+ 
                 | Bsup t -> A_binop (Binf t, a_e2, a_e1, typ, compteur ())
                 | Bsupeq t -> A_binop (Binfeq t, a_e2, a_e1, typ, compteur ())
                 | Bnotequals t -> 

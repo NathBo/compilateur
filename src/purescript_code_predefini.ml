@@ -14,7 +14,7 @@ let code_initial =
         
         label "_show_int" ++
         enter (imm 0) ++
-        movq (imm 100) (reg rdi) ++
+        movq (imm 24) (reg rdi) ++
         call "malloc" ++
         movq (reg rax) (reg rdi) ++
         movq (ilab "_show_string_int") (reg rsi) ++
@@ -124,5 +124,35 @@ let code_initial =
         enter (imm 0) ++
         movq (ind ~ofs:16 rbp) (reg rax) ++
         xorq (imm 1) (reg rax) ++
+        leave ++
+        ret ++
+
+        label "_concat" ++
+        enter (imm 0) ++
+
+
+        movq (ind ~ofs:16 rbp) (reg rdi) ++
+        call "strlen" ++
+        movq (reg rax) (reg r9) ++
+        
+        movq (ind ~ofs:24 rbp) (reg rdi) ++
+        call "strlen" ++
+        addq (reg rax) (reg r9) ++
+        incq (reg r9) ++
+
+
+        movq (reg r9) (reg rdi) ++
+        call "malloc" ++
+        movq (reg rax) (reg r8) ++
+        movq (reg rax) (reg rdi) ++
+
+        movq (ind ~ofs:16 rbp) (reg rsi) ++
+        call "strcpy" ++
+
+        movq (ind ~ofs:24 rbp) (reg rsi) ++
+        call "strcat" ++
+
+
+        movq (reg r8) (reg rax) ++
         leave ++
         ret
