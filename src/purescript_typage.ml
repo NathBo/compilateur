@@ -498,7 +498,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
   | Edo (elist,pos) -> (let el = List.map (fun e -> let t,e' = typexpr env envtyps envinstances general e in if t <> Tcustom ("Effect",[Unit]) then typingerror ("On s'attendait à du Effect Unit mais du "^string_of_typ t^" a été donné") pos else e') elist in (Tcustom ("Effect",[Unit]),TEdo(el,Tcustom ("Effect",[Unit]))))
   | Elet (blist,e,pos) ->
     let rec aux env envtyps envinstances l = match l with
-      | b::q -> let t,el= typexpr env envtyps envinstances general b.bindexpr in aux (add_gen b.ident t env) envtyps envinstances q
+      | b::q -> let t,el= typexpr env envtyps envinstances general b.bindexpr in let a,r = aux (add_gen b.ident t env) envtyps envinstances q in a,{tbindexpr = el;tident = b.ident}::r
       | [] -> env,[] in
     let env,el = aux env envtyps envinstances blist in
     let t,e' = typexpr env envtyps envinstances  general e in (t,TElet(el,e',t))
