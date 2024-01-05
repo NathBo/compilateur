@@ -6,7 +6,6 @@ open Format
 module Smap = Map.Make(String)
 type local_env = ident Smap.t
 
-
 (* definition du nouvel arbre *)
 type a_file = a_tdecl list
 
@@ -76,7 +75,10 @@ let atom_typ : a_atom -> typ = function
 
 
 
-let rec typage_to_alloc t = (List.filter_map traduit_tvdecl t) 
+let rec typage_to_alloc t = 
+        let class_dico = Purescript_data_info.build_class_dico t in
+        Purescript_data_info.print_class_dico Format.std_formatter class_dico ;
+        (List.filter_map traduit_tvdecl t) 
 
 and traduit_tvdecl = function
         | TDdefn x -> Some (A_defn (traduit_tdefn x))
