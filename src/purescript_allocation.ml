@@ -4,7 +4,7 @@ open Purescript_typage
 open Format
 
 module Smap = Map.Make(String)
-type env = ident Smap.t
+type local_env = ident Smap.t
 
 
 (* definition du nouvel arbre *)
@@ -33,10 +33,10 @@ and a_expr = (* le dernier int stoque l'adresse du résultat *)
 and a_atom =
         (* le dernier int stoque l'adresse *)
         | A_constant of a_constant * typ * int
-        (*| A_lident of ident * typ *)
+        | A_lident of typ  * int
         | A_expr of a_expr * typ * int
 and a_binding =
-        {a_lident : int; a_expr : expr}
+        {a_lident : int ; a_expr : a_expr}
 
 
 let creer_8compteur () =
@@ -59,9 +59,11 @@ let expr_typ : a_expr -> typ = function
 let atom_adr : a_atom -> int = function
         | A_constant (_,_,x) -> x
         | A_expr (_,_,x) -> x
+        | A_lident (_,x) -> x
 let atom_typ : a_atom -> typ = function
         | A_constant (_,x,_) -> x
         | A_expr (_,x,_) -> x
+        | A_lident (x,_) -> x
 
 
 
@@ -75,7 +77,7 @@ and traduit_tvdecl = function
 and traduit_tdefn (x:tdefn) : a_defn =
         let a_patargs = (List.map traduit_tpatarg x.tpatargs) in
         let cmpt = creer_8compteur () in
-        let a_expr = traduit_texpr cmpt x.texpr in
+        let a_expr = traduit_texpr cmpt (Smap.empty) x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
@@ -84,27 +86,42 @@ and traduit_tpatarg = function
         | TPlident x -> A_lident x
         | _ -> failwith "pas encore def 2"
 
-and traduit_texpr compteur = function
+and traduit_texpr compteur env = function
         | TEatom (x,y) ->
-                        let atm = traduit_atom compteur x in
+                        let atm = traduit_atom compteur env x in
                         A_atom (atm,y, compteur ())
         | TElident (x,y,z) -> 
-                        let calculs_inter = List.map (traduit_atom compteur) y in
+                        let calculs_inter = List.map (traduit_atom compteur env) y in
                         A_lident (x, calculs_inter, z, compteur () )
         | TEdo (lst, typ) ->
-                        let lst_result = List.map (traduit_texpr compteur) lst in
+                        let lst_result = List.map (traduit_texpr compteur env) lst in
                         A_do ( lst_result , typ, compteur () )
         | TEbinop (bi, e1, e2, typ) -> begin
-                let a_e1 = traduit_texpr compteur e1 in
-                let a_e2 = traduit_texpr compteur e2 in
+                let a_e1 = traduit_texpr compteur env e1 in
+                let a_e2 = traduit_texpr compteur env e2 in
                 match bi with
                 | Bdivide _ -> 
                         A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
                 | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
         end
-        | TElet (lst, expr, typ) -> 
-                        let a_expr = traduit_texpr compteur expr in
-                        A_let ([], a_expr, typ, compteur()) (* TODO mettre a jour la liste *)
+        | TElet (lst, expr, typ) -> begin
+                        (* calcul des positions sur la pile *)
+                        Printf.printf "taille binding : %d\n" (List.length lst) ;
+                        let env = List.fold_left (fun prev_env binding -> Smap.add binding.tident
+                                (compteur ())
+                        prev_env ) env lst in
+
+                        (* calcul des valeurs *)
+                        let a_binding = List.fold_left (fun l binding -> (
+                                let expr = traduit_texpr compteur env binding.tbindexpr in
+                                let adr_result = Smap.find binding.tident env in
+                                {a_lident = adr_result ; a_expr = expr }
+                        )::l) [] lst in
+
+                        
+                        let a_expr = traduit_texpr compteur env expr in
+                        A_let (a_binding, a_expr, typ, compteur())
+        end
         | _ -> failwith "pas encore def 3"
 
 and traduit_tconstant = function
@@ -112,10 +129,12 @@ and traduit_tconstant = function
         | TCstring x -> A_string x
         | TCint x -> A_int x
 
-and traduit_atom compteur = function
+and traduit_atom compteur env = function
         | TAconstant (x,y) -> A_constant (traduit_tconstant x, y, compteur ())
-        (*| TAlident (x,y) -> A_lident (x,y) *)
-        | TAexpr (x,y) -> let expr = traduit_texpr compteur x in A_expr (expr, y, expr_adr expr)
+        | TAexpr (x,y) -> let expr = traduit_texpr compteur env x in A_expr (expr, y, expr_adr expr)
+        | TAlident (ident, typ) -> 
+                let adr = Smap.find ident env in
+                A_lident (typ, adr)
         | _ -> failwith "pas encore def 5"
 
 (* print *)
@@ -134,6 +153,7 @@ and print_a_expr fmt = function
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr
+        | A_lident (typ, adr) -> fprintf fmt "lident stoque en %d" adr
 
 
 

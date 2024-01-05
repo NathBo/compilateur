@@ -212,7 +212,11 @@ and traduit_a_expr = function
                         | _ -> failwith "operation binaire pas encore suportee"
         end
         | A_let (bindings, expr, typ, addr) ->
-                (* TODO : calc bindings *)
+                List.fold_left (fun acc binding -> (
+                        traduit_a_expr binding.a_expr ++
+                        movq2idx (expr_adr binding.a_expr) rbp binding.a_lident rbp
+                ) ++ acc) nop bindings ++
+
                 traduit_a_expr expr ++
                 movq2idx (expr_adr expr) rbp addr rbp
 
@@ -234,6 +238,7 @@ and traduit_a_atom = function
                         | A_bool true -> imm 1
                 in
                 movq cstPtr (ind ~ofs:addr rbp)
+        | A_lident (typ, addr) -> nop
 
 
 let genere_code arbre_typage =
