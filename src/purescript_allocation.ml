@@ -17,8 +17,9 @@ and a_tdecl =
 and a_defn =
         {a_ident : ident; a_patargs : a_patargs list ; a_expr : a_expr ; tableau_activation : int}
 and a_patargs =
-        | A_constant of a_constant
-        | A_lident of ident
+        (* le int indique la position dans la pile *)
+        | A_constant of a_constant * int
+        | A_lident of ident * int
         (* TODO *)
 and a_constant =
         | A_bool of bool
@@ -41,8 +42,13 @@ and a_binding =
 
 
 let creer_8compteur () =
-        let i = ref (-1) in
+        let i = ref (0) in
         (fun () -> (incr i; -(!i*8)))
+
+let creer_8compteur_plus () =
+        let i = ref (1) in
+        (fun () -> (incr i; !i*8))
+
 
 
 let expr_adr : a_expr -> int = function
@@ -78,15 +84,26 @@ and traduit_tvdecl = function
         | _ -> failwith "pas encore def 1"
 
 and traduit_tdefn (x:tdefn) : a_defn =
-        let a_patargs = (List.map traduit_tpatarg x.tpatargs) in
+
+        let arg_compteur = creer_8compteur_plus () in
+        let env = ref Smap.empty in
+
+        let a_patargs = (List.map (fun patarg ->
+                let r = traduit_tpatarg arg_compteur patarg in
+                (match r with
+                        | A_lident (nom, addr) -> env := Smap.add nom addr !env
+                        | _ -> ()
+                ); r
+        ) x.tpatargs) in
+        
         let cmpt = creer_8compteur () in
-        let a_expr = traduit_texpr cmpt (Smap.empty) x.texpr in
+        let a_expr = traduit_texpr cmpt !env x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
-and traduit_tpatarg = function
-        | TPconstant x -> A_constant (traduit_tconstant x)
-        | TPlident x -> A_lident x
+and traduit_tpatarg compteur = function
+        | TPconstant x -> A_constant (traduit_tconstant x, compteur () )
+        | TPlident x -> A_lident (x, compteur ())
         | _ -> failwith "pas encore def 2"
 
 and traduit_texpr compteur env = function
@@ -164,7 +181,11 @@ let rec print_a_file fmt f =
 and print_a_tdecl fmt = function
         | A_defn x -> fprintf fmt "def : " ; print_a_defn fmt x
 and print_a_defn fmt x =
-        fprintf fmt "%s (taille %d) = " x.a_ident x.tableau_activation; print_a_expr fmt x.a_expr
+        fprintf fmt "%s (taille %d) retourne : " x.a_ident x.tableau_activation ; print_typ (expr_typ x.a_expr) ; fprintf fmt " ("; List.iter (fun arg -> print_a_patarg fmt arg ; fprintf fmt ", ") x.a_patargs ; print_a_expr fmt x.a_expr
+
+and print_a_patarg fmt = function
+        | A_lident (nom,adr) -> fprintf fmt "arg (%s | %d)" nom adr
+        | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
 and print_a_expr fmt = function
         | A_atom (atm, typ, addr) -> fprintf fmt "atom"
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"

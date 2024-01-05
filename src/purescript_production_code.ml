@@ -37,7 +37,11 @@ and traduit_a_defn defn =
 
         traduit_a_expr defn.a_expr ++
 
-        movq (imm 0) (reg rax) ++
+        (match expr_typ defn.a_expr with
+                | Unit | Tcustom("Effect",[Unit]) -> movq (imm 0) (reg rax) 
+                | _ -> movq (ind ~ofs:(expr_adr defn.a_expr) rbp) (reg rax)
+        ) ++
+
 
         leave ++
         ret
