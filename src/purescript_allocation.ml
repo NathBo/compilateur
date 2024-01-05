@@ -130,7 +130,6 @@ and traduit_texpr compteur env = function
                 | Bnotequals t -> 
                                 let equal = A_binop (Bequals t, a_e1, a_e2, typ, compteur()) in
                                 A_lident ("not", [A_expr (equal, expr_typ equal, expr_adr equal)], typ, compteur ())
-
                 | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
         end
         | TElet (lst, expr, typ) ->

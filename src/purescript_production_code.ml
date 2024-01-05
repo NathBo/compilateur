@@ -160,6 +160,18 @@ and traduit_a_expr = function
 
                                 | _ -> failwith "égalite de ce type non supportée par Petit Purscript"
                         end
+                        | Bor _ ->
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                orq (ind ~ofs:e2_adr rbp) (reg r8) ++
+                                movq (reg r8) (ind ~ofs:addr rbp)
+
+                        | Band _ ->
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                andq (ind ~ofs:e2_adr rbp) (reg r8) ++
+                                movq (reg r8) (ind ~ofs:addr rbp)
+
+
+
  
                         | _ -> failwith "operation binaire pas encore suportee"
         end
