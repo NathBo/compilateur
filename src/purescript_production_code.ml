@@ -156,7 +156,7 @@ and traduit_a_expr = function
                                         movq (imm 1) (ind ~ofs:addr rbp) ++
                                         label ("_binop_eq_string_fin_" ^ label_num)
                                 | Unit ->
-                                        movq (imm 1) (ind ~ofs:addr rbp)
+                                        movq (imm 0) (ind ~ofs:addr rbp)
 
                                 | _ -> failwith "égalite de ce type non supportée par Petit Purscript"
                         end

@@ -129,30 +129,27 @@ let code_initial =
 
         label "_concat" ++
         enter (imm 0) ++
-
-
         movq (ind ~ofs:16 rbp) (reg rdi) ++
         call "strlen" ++
         movq (reg rax) (reg r9) ++
-        
         movq (ind ~ofs:24 rbp) (reg rdi) ++
         call "strlen" ++
         addq (reg rax) (reg r9) ++
         incq (reg r9) ++
-
-
         movq (reg r9) (reg rdi) ++
         call "malloc" ++
         movq (reg rax) (reg r8) ++
         movq (reg rax) (reg rdi) ++
-
         movq (ind ~ofs:16 rbp) (reg rsi) ++
         call "strcpy" ++
-
         movq (ind ~ofs:24 rbp) (reg rsi) ++
         call "strcat" ++
-
-
         movq (reg r8) (reg rax) ++
+        leave ++
+        ret ++
+
+        label "pure" ++
+        enter (imm 0) ++
+        movq (imm 0) (reg rax) ++
         leave ++
         ret
