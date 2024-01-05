@@ -6,116 +6,9 @@ let creer_compteur () =
         let i = ref (-1) in
         (fun () -> (incr i; !i))
 let compteur_str_const = creer_compteur ()
-
-
-
-let code_initial =
-        globl "main" ++
-
-        label "log" ++
-        enter (imm 0) ++
-        movq (ind ~ofs:16 rbp) (reg rsi) ++
-        movq (ilab "_printf_log") (reg rdi) ++
-        xorq (reg rax) (reg rax) ++
-        call "printf" ++
-        leave ++
-        ret ++
-        
-        label "_show_int" ++
-        enter (imm 0) ++
-        movq (imm 100) (reg rdi) ++
-        call "malloc" ++
-        movq (reg rax) (reg rdi) ++
-        movq (ilab "_show_string_int") (reg rsi) ++
-        xorq (reg rax) (reg rax) ++
-        movq (ind ~ofs:16 rbp) (reg rdx) ++
-        call "sprintf" ++
-        movq (reg rax) (reg r8) ++
-        movq (reg rdi) (reg rax) ++
-        subq (reg r8) (reg rax) ++
-        addq (reg rax) (reg r8) ++  (* to remove the last character *)
-        movb (imm 0) (ind ~ofs:(-1) r8) ++
-        leave ++
-        ret ++
-
-        label "_show_bool" ++
-        enter (imm 0) ++
-        cmpq (imm 0) (ind ~ofs:16 rbp) ++
-        je "_show_bool_false" ++
-        movq (ilab "_true") (reg rax) ++
-        leave ++
-        ret ++
-        label "_show_bool_false" ++
-        movq (ilab "_false") (reg rax) ++
-        leave ++
-        ret ++
-        
-        label "_divide" ++
-        enter (imm 0) ++
-        movq (ind ~ofs:16 rbp) (reg rax) ++
-        testq (reg rax) (reg rax) ++
-        js "_divide_neg" ++
-        movq (ind ~ofs:24 rbp) (reg rcx) ++
-        movq (imm 0) (reg rdx) ++
-        idivq (reg rcx) ++
-        leave ++
-        ret ++
-        label "_divide_neg" ++
-        movq (ind ~ofs:24 rbp) (reg rcx) ++
-        movq (imm (-1)) (reg rdx) ++
-        idivq (reg rcx) ++
-        testq (reg rdx) (reg rdx) ++
-        jnz "_divide_mod_1" ++
-        leave ++
-        ret ++
-        label "_divide_mod_1" ++
-        cmpq (imm 0) (ind ~ofs:24 rbp) ++
-        jg "_divide_neg_decr" ++
-        incq (reg rax) ++
-        leave ++
-        ret ++
-        label "_divide_neg_decr" ++
-        decq (reg rax) ++
-        leave ++
-        ret ++
-
-
-
-
-        label "mod" ++
-        enter (imm 0) ++
-        movq (ind ~ofs:16 rbp) (reg rax) ++
-        testq (reg rax) (reg rax) ++
-        js "_mod_neg" ++
-        movq (ind ~ofs:24 rbp) (reg rcx) ++
-        movq (imm 0) (reg rdx) ++
-        idivq (reg rcx) ++
-        movq (reg rdx) (reg rax) ++
-        leave ++
-        ret ++
-        label "_mod_neg" ++
-        movq (ind ~ofs:24 rbp) (reg rcx) ++
-        movq (imm (-1)) (reg rdx) ++
-        idivq (reg rcx) ++
-        testq (reg rdx) (reg rdx) ++
-        movq (reg rdx) (reg rax) ++
-        testq (reg rax) (reg rax) ++
-        jz "_mod_ret_0" ++
-        cmpq (imm 0) (ind ~ofs:24 rbp) ++
-        js "_mod_neg_neg" ++
-        addq (ind ~ofs:24 rbp) (reg rax) ++
-        leave ++
-        ret ++
-        label "_mod_neg_neg" ++
-        subq (ind ~ofs:24 rbp) (reg rax) ++
-        leave ++
-        ret ++
-        label "_mod_ret_0" ++
-        movq (imm 0) (reg rax) ++
-        leave ++
-        ret
-
-
+let compteur_if = creer_compteur ()
+let compteur_inf = creer_compteur ()
+let compteur_inf_eq = creer_compteur ()
 
 
 
@@ -131,7 +24,7 @@ let add_data x =
 
 
 let rec traduit_a_file file =
-        List.fold_left (fun acc tdecl -> acc ++ traduit_a_tdecl tdecl) code_initial file
+        List.fold_left (fun acc tdecl -> acc ++ traduit_a_tdecl tdecl) Purescript_code_predefini.code_initial file
 
 and traduit_a_tdecl = function
         | A_defn x -> traduit_a_defn x
@@ -208,7 +101,29 @@ and traduit_a_expr = function
                                 movq (reg r8) (ind ~ofs:addr rbp)
                         | Bdivide _ ->
                                 failwith "la division est maintenant une fonction"
-                                 
+                        | Binf _ -> 
+                                let label_num = string_of_int (compteur_inf ()) in
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                movq (ind ~ofs:e2_adr rbp) (reg r9) ++
+                                cmpq (reg r9) (reg r8) ++
+                                jl ("_binop_inf_" ^ label_num) ++
+                                movq (imm 0) (ind ~ofs:addr rbp) ++
+                                jmp ("_binop_inf_fin_" ^ label_num) ++
+                                label ("_binop_inf_" ^ label_num) ++
+                                movq (imm 1) (ind ~ofs:addr rbp) ++
+                                label ("_binop_inf_fin_" ^ label_num)
+                        | Binfeq _ -> 
+                                let label_num = string_of_int (compteur_inf_eq ()) in
+                                movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                movq (ind ~ofs:e2_adr rbp) (reg r9) ++
+                                cmpq (reg r9) (reg r8) ++
+                                jle ("_binop_infeq_" ^ label_num) ++
+                                movq (imm 0) (ind ~ofs:addr rbp) ++
+                                jmp ("_binop_infeq_fin_" ^ label_num) ++
+                                label ("_binop_infeq_" ^ label_num) ++
+                                movq (imm 1) (ind ~ofs:addr rbp) ++
+                                label ("_binop_infeq_fin_" ^ label_num)
+ 
                         | _ -> failwith "operation binaire pas encore suportee"
         end
         | A_let (bindings, expr, typ, addr) ->
@@ -219,10 +134,21 @@ and traduit_a_expr = function
 
                 traduit_a_expr expr ++
                 movq2idx (expr_adr expr) rbp addr rbp
+        | A_if (e1, e2, e3, typ, addr) ->
+                        let lab_num = string_of_int (compteur_if ()) in
+                        traduit_a_expr e1 ++
+                        cmpq (imm 0) (ind ~ofs:(expr_adr e1) rbp) ++
+                        je ("_if_lab_false_" ^ lab_num) ++
+                        traduit_a_expr e2 ++
+                        movq2idx (expr_adr e2) rbp addr rbp ++
+                        jmp ("_if_lab_end_" ^ lab_num) ++
+                        label ("_if_lab_false_" ^ lab_num) ++
+                        traduit_a_expr e3 ++
+                        movq2idx (expr_adr e3) rbp addr rbp ++
+                        label ("_if_lab_end_" ^ lab_num)
+                        
 
-
-
-
+                        
 and traduit_a_atom = function
         | A_expr (expr, typ, addr) ->
                 let addr_result = expr_adr expr in

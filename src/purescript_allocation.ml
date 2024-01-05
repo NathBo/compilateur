@@ -30,6 +30,7 @@ and a_expr = (* le dernier int stoque l'adresse du résultat *)
         | A_do of a_expr list * typ * int
         | A_binop of binop * a_expr * a_expr * typ * int
         | A_let of a_binding list * a_expr * typ * int
+        | A_if of a_expr * a_expr * a_expr * typ * int
 and a_atom =
         (* le dernier int stoque l'adresse *)
         | A_constant of a_constant * typ * int
@@ -50,12 +51,14 @@ let expr_adr : a_expr -> int = function
         | A_do (_,_,x) -> x
         | A_binop (_,_,_,_,x) -> x
         | A_let (_,_,_,x) -> x
+        | A_if (_,_,_,_,x) -> x
 let expr_typ : a_expr -> typ = function
         | A_atom (_,x,_) -> x
         | A_lident (_, _, x, _) -> x
         | A_do (_,x,_) -> x
         | A_binop (_,_,_,x,_) -> x
         | A_let (_,_,x,_) -> x
+        | A_if (_,_,_,x,_) -> x
 let atom_adr : a_atom -> int = function
         | A_constant (_,_,x) -> x
         | A_expr (_,_,x) -> x
@@ -102,9 +105,11 @@ and traduit_texpr compteur env = function
                 match bi with
                 | Bdivide _ -> 
                         A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
+                | Bsup t -> A_binop (Binf t, a_e2, a_e1, typ, compteur ())
+                | Bsupeq t -> A_binop (Binfeq t, a_e2, a_e1, typ, compteur ())
                 | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
         end
-        | TElet (lst, expr, typ) -> begin
+        | TElet (lst, expr, typ) ->
                         (* calcul des positions sur la pile *)
                         Printf.printf "taille binding : %d\n" (List.length lst) ;
                         let env = List.fold_left (fun prev_env binding -> Smap.add binding.tident
@@ -121,7 +126,12 @@ and traduit_texpr compteur env = function
                         
                         let a_expr = traduit_texpr compteur env expr in
                         A_let (a_binding, a_expr, typ, compteur())
-        end
+        | TEif (e1, e2, e3, typ)        ->
+                        let a_e1 = traduit_texpr compteur env e1 in
+                        let a_e2 = traduit_texpr compteur env e2 in
+                        let a_e3 = traduit_texpr compteur env e3 in
+                        A_if (a_e1, a_e2, a_e3, typ, compteur ())
+                
         | _ -> failwith "pas encore def 3"
 
 and traduit_tconstant = function
@@ -150,6 +160,7 @@ and print_a_expr fmt = function
         | A_do (lst, typ, adr) -> fprintf fmt "do (stoque en %d) :  \n" adr ; List.iter (fun x -> (print_a_expr fmt x; fprintf fmt "\n")) lst
         | A_binop (_,_,_,_,_) -> fprintf fmt "binop"
         | A_let (_,expr,_,_) -> fprintf fmt "let... in " ; print_a_expr fmt expr
+        | A_if (e1,e2,e3,typ,addr) -> fprintf fmt "if (%a) then (%a) else (%a)" print_a_expr e1 print_a_expr e2 print_a_expr e3
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr
