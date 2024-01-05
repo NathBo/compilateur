@@ -9,6 +9,8 @@ let compteur_str_const = creer_compteur ()
 let compteur_if = creer_compteur ()
 let compteur_inf = creer_compteur ()
 let compteur_inf_eq = creer_compteur ()
+let compteur_eq = creer_compteur ()
+let compteur_eq_string = creer_compteur ()
 
 
 
@@ -123,6 +125,37 @@ and traduit_a_expr = function
                                 label ("_binop_infeq_" ^ label_num) ++
                                 movq (imm 1) (ind ~ofs:addr rbp) ++
                                 label ("_binop_infeq_fin_" ^ label_num)
+                        | Bequals _ -> begin
+                                match (expr_typ e1) with
+                                | Int | Boolean ->
+                                        let label_num = string_of_int (compteur_eq ()) in
+                                        movq (ind ~ofs:e1_adr rbp) (reg r8) ++
+                                        movq (ind ~ofs:e2_adr rbp) (reg r9) ++
+                                        cmpq (reg r8) (reg r9) ++
+                                        je ("_binop_eq_" ^ label_num) ++
+                                        movq (imm 0) (ind ~ofs:addr rbp) ++
+                                        jmp ("_binop_eq_fin_" ^ label_num) ++
+                                        label ("_binop_eq_" ^ label_num) ++
+                                        movq (imm 1) (ind ~ofs:addr rbp) ++
+                                        label ("_binop_eq_fin_" ^ label_num)
+ 
+                                | String ->
+                                        let label_num = string_of_int (compteur_eq_string ()) in
+                                        movq (ind ~ofs:e1_adr rbp) (reg rdi) ++
+                                        movq (ind ~ofs:e2_adr rbp) (reg rsi) ++
+                                        call "strcmp" ++
+                                        testq (reg rax) (reg rax) ++
+                                        jz ("_binop_eq_string_0_" ^ label_num) ++
+                                        movq (imm 0) (ind ~ofs:addr rbp) ++
+                                        jmp ("_binop_eq_string_fin_" ^ label_num) ++
+                                        label ("_binop_eq_string_0_" ^ label_num) ++
+                                        movq (imm 1) (ind ~ofs:addr rbp) ++
+                                        label ("_binop_eq_string_fin_" ^ label_num)
+                                | Unit ->
+                                        movq (imm 1) (ind ~ofs:addr rbp)
+
+                                | _ -> failwith "égalite de ce type non supportée par Petit Purscript"
+                        end
  
                         | _ -> failwith "operation binaire pas encore suportee"
         end

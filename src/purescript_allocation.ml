@@ -107,6 +107,10 @@ and traduit_texpr compteur env = function
                         A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
                 | Bsup t -> A_binop (Binf t, a_e2, a_e1, typ, compteur ())
                 | Bsupeq t -> A_binop (Binfeq t, a_e2, a_e1, typ, compteur ())
+                | Bnotequals t -> 
+                                let equal = A_binop (Bequals t, a_e1, a_e2, typ, compteur()) in
+                                A_lident ("not", [A_expr (equal, expr_typ equal, expr_adr equal)], typ, compteur ())
+
                 | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
         end
         | TElet (lst, expr, typ) ->
@@ -142,9 +146,13 @@ and traduit_tconstant = function
 and traduit_atom compteur env = function
         | TAconstant (x,y) -> A_constant (traduit_tconstant x, y, compteur ())
         | TAexpr (x,y) -> let expr = traduit_texpr compteur env x in A_expr (expr, y, expr_adr expr)
-        | TAlident (ident, typ) -> 
-                let adr = Smap.find ident env in
-                A_lident (typ, adr)
+        | TAlident (ident, typ) -> begin
+                match ident with
+                | "unit" -> A_constant ( A_bool (true), typ, compteur () )
+                | _ ->
+                        let adr = Smap.find ident env in
+                        A_lident (typ, adr)
+        end
         | _ -> failwith "pas encore def 5"
 
 (* print *)
