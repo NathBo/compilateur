@@ -29,11 +29,14 @@ and a_expr = (* le dernier int stoque l'adresse du résultat *)
         | A_lident of ident * a_atom list * typ * int
         | A_do of a_expr list * typ * int
         | A_binop of binop * a_expr * a_expr * typ * int
+        | A_let of a_binding list * a_expr * typ * int
 and a_atom =
         (* le dernier int stoque l'adresse *)
         | A_constant of a_constant * typ * int
         (*| A_lident of ident * typ *)
         | A_expr of a_expr * typ * int
+and a_binding =
+        {a_lident : int; a_expr : expr}
 
 
 let creer_8compteur () =
@@ -46,11 +49,13 @@ let expr_adr : a_expr -> int = function
         | A_lident (_, _, _, x) -> x
         | A_do (_,_,x) -> x
         | A_binop (_,_,_,_,x) -> x
+        | A_let (_,_,_,x) -> x
 let expr_typ : a_expr -> typ = function
         | A_atom (_,x,_) -> x
         | A_lident (_, _, x, _) -> x
         | A_do (_,x,_) -> x
         | A_binop (_,_,_,x,_) -> x
+        | A_let (_,_,x,_) -> x
 let atom_adr : a_atom -> int = function
         | A_constant (_,_,x) -> x
         | A_expr (_,_,x) -> x
@@ -97,6 +102,9 @@ and traduit_texpr compteur = function
                         A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
                 | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
         end
+        | TElet (lst, expr, typ) -> 
+                        let a_expr = traduit_texpr compteur expr in
+                        A_let ([], a_expr, typ, compteur()) (* TODO mettre a jour la liste *)
         | _ -> failwith "pas encore def 3"
 
 and traduit_tconstant = function
@@ -122,6 +130,7 @@ and print_a_expr fmt = function
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
         | A_do (lst, typ, adr) -> fprintf fmt "do (stoque en %d) :  \n" adr ; List.iter (fun x -> (print_a_expr fmt x; fprintf fmt "\n")) lst
         | A_binop (_,_,_,_,_) -> fprintf fmt "binop"
+        | A_let (_,expr,_,_) -> fprintf fmt "let... in " ; print_a_expr fmt expr
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr

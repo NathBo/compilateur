@@ -188,7 +188,7 @@ and traduit_a_expr = function
                         traduit_a_expr expr
                 )) nop lst ++
                 movq (imm 0) (ind ~ofs:addr rbp)
-        | A_binop (bi, e1, e2, typ, addr) ->
+        | A_binop (bi, e1, e2, typ, addr) -> begin
                 traduit_a_expr e1 ++
                 traduit_a_expr e2 ++
                 let e1_adr = expr_adr e1 in
@@ -210,6 +210,12 @@ and traduit_a_expr = function
                                 failwith "la division est maintenant une fonction"
                                  
                         | _ -> failwith "operation binaire pas encore suportee"
+        end
+        | A_let (bindings, expr, typ, addr) ->
+                (* TODO : calc bindings *)
+                traduit_a_expr expr ++
+                movq2idx (expr_adr expr) rbp addr rbp
+
 
 
 
