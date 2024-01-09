@@ -504,7 +504,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
     let t,e' = typexpr env envtyps envinstances  general e in (t,TElet(el,e',t))
   | Ecase (e,blist,pos) -> let t,e' = typexpr env envtyps envinstances general e in (match blist with
     | [] -> typingerror "Pattern vide" pos
-    | b::q -> let t',_ = typbranch env envtyps envinstances t general b in let l = List.map (fun x-> let a,b = typbranch env envtyps envinstances t general x in if a <> t' then typingerror ("Les types "^string_of_typ a^" et "^string_of_typ t'^" ne sont pas compatibles") pos else b) q in
+    | b::q -> let t',_ = typbranch env envtyps envinstances t general b in let l = List.map (fun x-> let a,b = typbranch env envtyps envinstances t general x in if a <> t' then typingerror ("Les types "^string_of_typ a^" et "^string_of_typ t'^" ne sont pas compatibles") pos else b) blist in
     if not (checkexaustivelist env envtyps envinstances [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then typingerror "Pattern non exhaustif" pos else (t',TEcase(e',l,t))
   )
   | Elident (f,alist,pos) -> let envinstances = Smap.union noconseqconflit envinstances (fourth (smapfind f !envfonctions pos))  in if mem f env then typingerror (f^" n'est pas une fonction") pos
