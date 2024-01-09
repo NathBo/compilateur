@@ -208,8 +208,8 @@ and traduit_a_expr = function
                                         match branch.a_pattern with
                                         | A_patarg (A_uident (num, addr_compare)) -> begin
                                                 let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
-                                                
-                                                cmpq (imm num) (ind ~ofs:(expr_adr expr) rbp)++
+                                                movq (ind ~ofs:(expr_adr expr) rbp) (reg r8) ++
+                                                cmpq (imm num) (ind r8)++
                                                 jne label_suite ++
                                                 traduit_a_expr branch.expr ++
                                                 movq2idx (expr_adr branch.expr) rbp addr rbp ++
