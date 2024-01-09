@@ -696,7 +696,7 @@ else
   let conflit pos s _ _ = typingerror "conflit dans les patternes" pos in
   let envtyps = Smap.union (conflit td.pos) envtyps envvartyps in
   let rec addinstance envinstances nlist = match nlist with
-      | [] -> print_endline "finito";envinstances
+      | [] -> envinstances
       | n::q -> Smap.add n.nident ((List.map (fun a -> fst (typatype env envtyps envinstances a)) n.atypes,[])::(smapfind n.nident envinstances td.pos)) (addinstance envinstances q) in
   let envinstances = addinstance envinstances td.ntypelist in
   lastdefined := td.dident;

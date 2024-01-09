@@ -203,24 +203,48 @@ and traduit_a_expr = function
                         let rec test_branch = function
                                 | [] -> 
                                         movq (imm 0) (ind ~ofs:addr rbp)
-                                | branch :: lst -> begin
-                                        Printf.printf "len lst : %d\n" (List.length lst) ;
-                                        match branch.a_pattern with
-                                        | A_patarg (A_uident (num, addr_compare)) -> begin
-                                                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
-                                                movq (ind ~ofs:(expr_adr expr) rbp) (reg r8) ++
-                                                cmpq (imm num) (ind r8)++
-                                                jne label_suite ++
-                                                traduit_a_expr branch.expr ++
-                                                movq2idx (expr_adr branch.expr) rbp addr rbp ++
-                                                jmp label_fin ++
-                                                label label_suite
-                                        end
-                                        ++ test_branch lst
-                                end
-                        in test_branch possibilites
-                        ++ label label_fin
+                                | branch :: lst ->
+                                        traduit_a_pattern (expr_adr expr) addr branch.expr label_fin branch.a_pattern ++
+                                        test_branch lst
+                        in test_branch possibilites ++
+                        label label_fin
         end
+        | A_uident (info, atoms, typ, addr) -> 
+                        movq (imm (8*(info.size+1))) (reg rdi) ++
+                        call "malloc" ++
+                        movq (reg rax) (ind ~ofs:addr rbp) ++
+                        movq (imm info.hash) (ind rax) ++
+                        fst (List.fold_left (fun (acc,id) atom -> (acc ++ (
+                                traduit_a_atom atom ++
+                                movq (ind ~ofs:addr rbp) (reg r9) ++
+                                movq2idx (atom_adr atom) rbp (8*id) r9
+                        )),(id+1)) (nop,1) atoms)
+
+
+
+
+
+and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
+        | A_patarg (A_uident (num, addr_compare)) ->
+                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
+                cmpq (imm num) (ind r8)++
+                jne label_suite ++
+                traduit_a_expr expr_if_ok ++
+                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                jmp label_fin ++
+                label label_suite
+        | A_mulpatarg (hash, patargs) ->
+                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
+                cmpq (imm hash) (ind r8)++
+                jne label_suite ++
+                traduit_a_expr expr_if_ok ++
+                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                jmp label_fin ++
+                label label_suite
+        | _ -> failwith "a faire 123"
+
 
                         
 
@@ -242,7 +266,7 @@ and traduit_a_atom = function
                 movq cstPtr (ind ~ofs:addr rbp)
         | A_lident (typ, addr) -> nop
         | A_uident (id, typ, addr) ->
-                        movq (imm 4) (reg rdi) ++
+                        movq (imm 8) (reg rdi) ++
                         call "malloc" ++
                         movq (imm id) (ind rax) ++
                         movq (reg rax) (ind ~ofs:addr rbp)

@@ -47,6 +47,7 @@ and a_branch =
         {a_pattern : a_pattern ; expr : a_expr}
 and a_pattern =
         | A_patarg of a_patarg
+        | A_mulpatarg of int * a_patarg list
 
 let creer_8compteur () =
         let i = ref (0) in
@@ -180,7 +181,6 @@ and traduit_texpr dico compteur env = function
                 let b = List.map (traduit_tbranch dico compteur env) branchs in
                 A_case (e, b, typ, compteur () )
                 
-        | _ -> failwith "pas encore def 3"
 
 and traduit_tconstant dico = function
         | TCbool x -> A_bool x 
@@ -206,6 +206,10 @@ and traduit_atom dico compteur env = function
 
 and traduit_tpattern dico compteur = function
         | TPpatarg patarg -> A_patarg (traduit_tpatarg dico compteur patarg)
+        | TPmulpatarg (ident, tpatargs) ->
+                        let hash = (Smap.find ident dico).hash in
+                        A_mulpatarg (hash, List.map (traduit_tpatarg dico compteur) tpatargs)
+
 and traduit_tbranch dico compteur env tbranch =
         {a_pattern = traduit_tpattern dico compteur tbranch.tpattern ; expr = traduit_texpr dico compteur env tbranch.texpr}
 
@@ -221,6 +225,7 @@ and print_a_defn fmt x =
 and print_a_patarg fmt = function
         | A_lident (nom,adr) -> fprintf fmt "arg (%s | %d)" nom adr
         | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
+        | A_uident (hash,adr) -> fprintf fmt "uident (%d,%d)" hash adr
 and print_a_expr fmt = function
         | A_atom (atm, typ, addr) -> fprintf fmt "atom"
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
