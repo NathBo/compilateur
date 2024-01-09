@@ -3,14 +3,10 @@ open Purescript_typage
 open Format
 
 module Smap = Map.Make(String)
-type local_env = int Smap.t
 
-type class_info = {hash : local_env ; size : int }
+type data_info = {hash : int ; size : int }
+type class_info = data_info Smap.t
 
-let add_possi (nom,donnees) info id =
-        let nouv_hash = Smap.add nom id info.hash in
-        let cur_size = List.length donnees in
-        {hash = nouv_hash ; size = max info.size cur_size}
 
 let creer_compteur () =
         let i = ref (-1) in
@@ -18,15 +14,15 @@ let creer_compteur () =
 
 let build_class_info possibilites =
         let cmpt = creer_compteur () in
-        let info = ref {hash = Smap.empty ; size = 0} in 
-        List.iter (fun possi -> info := add_possi possi !info ( cmpt ())) possibilites ;
+        let info = ref Smap.empty in 
+        List.iter (fun possi -> info := Smap.add (fst possi) {hash = cmpt () ; size = List.length (snd possi)} !info) possibilites;
         !info
 
 let build_class_dico prog =
         let dico = ref Smap.empty in
         List.iter (fun x ->
                 match x with
-                        | TDdata (nom, _, possibilites) -> dico := Smap.add nom (build_class_info possibilites) !dico
+                        | TDdata (_, _, possibilites) -> dico := Smap.union (fun nom g d -> failwith "the same name is provided two times in data definition") !dico (build_class_info possibilites)
                         | _ -> ()
         ) prog ;
         !dico
@@ -34,13 +30,6 @@ let build_class_dico prog =
 let print_class_dico fmt dico = begin
         fprintf fmt "Class dico :\n" ;
         Smap.iter (fun nom info ->
-                fprintf fmt "%s (taille %d) devient :\n" nom info.size ;
-                Smap.iter (fun lettre id -> fprintf fmt "     %s -> %d\n" lettre id) info.hash
+                fprintf fmt "   %s devient : %d, taille : %d\n" nom info.hash info.size
         ) dico
 end
-
-
-
-
-
-

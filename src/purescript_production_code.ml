@@ -11,6 +11,7 @@ let compteur_inf = creer_compteur ()
 let compteur_inf_eq = creer_compteur ()
 let compteur_eq = creer_compteur ()
 let compteur_eq_string = creer_compteur ()
+let compteur_branch = creer_compteur ()
 
 
 
@@ -50,7 +51,7 @@ and traduit_a_expr = function
         | A_atom (atm, typ, addr) ->
                 traduit_a_atom atm ++
                 movq2idx (atom_adr atm) rbp addr rbp
-        | A_lident (fct, params, typ, addr) ->
+        | A_lident (fct, params, typ, addr) -> begin
                 (* calcul des params *)
                 List.fold_left (fun acc atom -> acc ++ (
                         traduit_a_atom atom
@@ -80,8 +81,8 @@ and traduit_a_expr = function
                 )) nop params ++
                 (if ((List.length params) mod 2) = 1 then popq r8 else nop) ++
 
-
                 movq (reg rax) (ind ~ofs:addr rbp)
+        end
         | A_do (lst, typ, addr) ->
                 List.fold_left (fun acc expr -> acc ++ (
                         traduit_a_expr expr
@@ -178,7 +179,7 @@ and traduit_a_expr = function
         | A_let (bindings, expr, typ, addr) ->
                 List.fold_left (fun acc binding -> (
                         traduit_a_expr binding.a_expr ++
-                        movq2idx (expr_adr binding.a_expr) rbp binding.a_lident rbp
+                        movq2idx (expr_adr binding.a_expr) rbp binding.a_adr rbp
                 ) ++ acc) nop bindings ++
 
                 traduit_a_expr expr ++
@@ -195,6 +196,32 @@ and traduit_a_expr = function
                         traduit_a_expr e3 ++
                         movq2idx (expr_adr e3) rbp addr rbp ++
                         label ("_if_lab_end_" ^ lab_num)
+        | A_case (expr, possibilites, typ, addr) -> begin
+                        traduit_a_expr expr ++
+
+                        let label_fin = "_branch_fin_" ^ (string_of_int (compteur_branch ())) in
+                        let rec test_branch = function
+                                | [] -> 
+                                        movq (imm 0) (ind ~ofs:addr rbp)
+                                | branch :: lst -> begin
+                                        Printf.printf "len lst : %d\n" (List.length lst) ;
+                                        match branch.a_pattern with
+                                        | A_patarg (A_uident (num, addr_compare)) -> begin
+                                                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                                                
+                                                cmpq (imm num) (ind ~ofs:(expr_adr expr) rbp)++
+                                                jne label_suite ++
+                                                traduit_a_expr branch.expr ++
+                                                movq2idx (expr_adr branch.expr) rbp addr rbp ++
+                                                jmp label_fin ++
+                                                label label_suite
+                                        end
+                                        ++ test_branch lst
+                                end
+                        in test_branch possibilites
+                        ++ label label_fin
+        end
+
                         
 
                         
@@ -214,6 +241,12 @@ and traduit_a_atom = function
                 in
                 movq cstPtr (ind ~ofs:addr rbp)
         | A_lident (typ, addr) -> nop
+        | A_uident (id, typ, addr) ->
+                        movq (imm 4) (reg rdi) ++
+                        call "malloc" ++
+                        movq (imm id) (ind rax) ++
+                        movq (reg rax) (ind ~ofs:addr rbp)
+
 
 
 let genere_code arbre_typage =
