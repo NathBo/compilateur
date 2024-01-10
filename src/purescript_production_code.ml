@@ -239,6 +239,16 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
                 cmpq (imm hash) (ind r8)++
                 jne label_suite ++
+                
+                (
+                let e = ref nop in
+                List.iteri (fun (id:int) (patarg:a_patarg) : unit -> match patarg with
+                        | A_lident (_,adr) -> e:= !e ++
+                                        movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                                        movq2idx (8*id+8) r9 adr rbp
+                        | _ -> failwith "ne sait pas encore faire 123"
+                ) patargs; !e) ++
+
                 traduit_a_expr expr_if_ok ++
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin ++

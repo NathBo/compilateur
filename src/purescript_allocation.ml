@@ -105,24 +105,30 @@ and traduit_tdefn dico x =
 
         let arg_compteur = creer_8compteur_plus () in
         let env = ref Smap.empty in
-
+        
         let a_patargs = (List.map (fun patarg ->
+                let r,e = traduit_tpatarg dico arg_compteur patarg in
+                env := Smap.union (fun _ -> failwith "2 ident identiques") !env e;
+                r
+        ) x.tpatargs) in
+        
+        (*let a_patargs = (List.map (fun patarg ->
                 let r = traduit_tpatarg dico arg_compteur patarg in
                 (match r with
                         | A_lident (nom, addr) -> env := Smap.add nom addr !env
                         | _ -> ()
                 ); r
-        ) x.tpatargs) in
+        ) x.tpatargs) in *)
         
         let cmpt = creer_8compteur () in
         let a_expr = traduit_texpr dico cmpt !env x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
-and traduit_tpatarg dico compteur = function
-        | TPconstant x -> A_constant (traduit_tconstant dico x, compteur () )
-        | TPlident x -> A_lident (x, compteur ())
-        | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ())
+and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradction et le nouvel environnement *)
+        | TPconstant x -> A_constant (traduit_tconstant dico x, compteur () ), Smap.empty
+        | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
+        | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
         | _ -> failwith "pas encore def 2"
 
 and traduit_texpr dico compteur env = function
@@ -204,14 +210,23 @@ and traduit_atom dico compteur env = function
                         A_uident (data_info.hash , typ, adr)
         | _ -> failwith "pas encore def 5"
 
-and traduit_tpattern dico compteur = function
-        | TPpatarg patarg -> A_patarg (traduit_tpatarg dico compteur patarg)
+and traduit_tpattern dico compteur = function (* retourne une paire avec la a_patern et l'environnement a ajouter *)
+        | TPpatarg patarg -> let a_patarg, env = traduit_tpatarg dico compteur patarg in (A_patarg a_patarg,env)
         | TPmulpatarg (ident, tpatargs) ->
                         let hash = (Smap.find ident dico).hash in
-                        A_mulpatarg (hash, List.map (traduit_tpatarg dico compteur) tpatargs)
+                        let env = ref Smap.empty in
+                        let lst_patarg = ref [] in
+                        List.iter (fun x ->
+                                let p,e = traduit_tpatarg dico compteur x in
+                                env := Smap.union (fun _ -> failwith "union fail") !env e;
+                                lst_patarg := p :: !lst_patarg
+                        ) tpatargs ;
+                        A_mulpatarg (hash, !lst_patarg), !env
 
 and traduit_tbranch dico compteur env tbranch =
-        {a_pattern = traduit_tpattern dico compteur tbranch.tpattern ; expr = traduit_texpr dico compteur env tbranch.texpr}
+        let a_pattern, env_add = traduit_tpattern dico compteur tbranch.tpattern in
+        let nouv_env = Smap.union (fun _ -> failwith "union fail") env env_add in
+        {a_pattern = a_pattern ; expr = traduit_texpr dico compteur nouv_env tbranch.texpr}
 
 
 (* print *)
@@ -227,19 +242,21 @@ and print_a_patarg fmt = function
         | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
         | A_uident (hash,adr) -> fprintf fmt "uident (%d,%d)" hash adr
 and print_a_expr fmt = function
-        | A_atom (atm, typ, addr) -> fprintf fmt "atom"
+        | A_atom (atm, typ, addr) -> fprintf fmt "atom : %a " print_a_atom atm
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
         | A_uident (info, param, typ, pos) -> fprintf fmt "appel de ... et range en %d : do {" pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
         | A_do (lst, typ, adr) -> fprintf fmt "do (stoque en %d) :  \n" adr ; List.iter (fun x -> (print_a_expr fmt x; fprintf fmt "\n")) lst
         | A_binop (_,_,_,_,_) -> fprintf fmt "binop"
         | A_let (_,expr,_,_) -> fprintf fmt "let... in " ; print_a_expr fmt expr
         | A_if (e1,e2,e3,typ,addr) -> fprintf fmt "if (%a) then (%a) else (%a)" print_a_expr e1 print_a_expr e2 print_a_expr e3
-        | A_case _ -> fprintf fmt "case..."
+        | A_case (expr, branchs, typ, adr) -> fprintf fmt "case {%a} et range en %d : " print_a_expr expr adr; List.iter (print_a_branch fmt) branchs
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr
         | A_lident (typ, adr) -> fprintf fmt "lident stoque en %d" adr
         | A_uident _ -> fprintf fmt "uident"
+and print_a_branch fmt branch = fprintf fmt " | ... -> %a ; " print_a_expr branch.expr
+
 
 
 
