@@ -234,6 +234,26 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin ++
                 label label_suite
+        | A_patarg (A_constant (const, addr_compare)) ->
+                (*let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                traduit_a_const const ++
+                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
+                movq (ind ~ofs:(const_adr const) rbp) (reg r9) ++
+                cmpq (reg r9) (reg r8)++  (* egalite ne fonctionne pas pour les string *)
+                jne label_suite ++
+                traduit_a_expr expr_if_ok ++
+                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                jmp label_fin ++
+                label label_suite*)
+                failwith "a corriger"
+
+        | A_patarg (A_lident (_,adr)) -> 
+                movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                movq2idx 8 r9 adr rbp ++
+                traduit_a_expr expr_if_ok ++
+                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                jmp label_fin
+
         | A_mulpatarg (hash, patargs) ->
                 let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
@@ -260,7 +280,6 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin ++
                 label label_suite
-        | _ -> failwith "a faire 1234"
 
 and traduit_a_const = function
         | A_int (i,adr) -> movq (imm i) (ind ~ofs:adr rbp)
