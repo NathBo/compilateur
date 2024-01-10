@@ -248,11 +248,12 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 failwith "a corriger"
 
         | A_patarg (A_lident (_,adr)) -> 
-                movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                (*movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                 movq2idx 8 r9 adr rbp ++
                 traduit_a_expr expr_if_ok ++
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
-                jmp label_fin
+                jmp label_fin *)
+                failwith "a corriger"
 
         | A_mulpatarg (hash, patargs) ->
                 let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
