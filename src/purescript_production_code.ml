@@ -243,9 +243,16 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 (
                 let e = ref nop in
                 List.iteri (fun (id:int) (patarg:a_patarg) : unit -> match patarg with
-                        | A_lident (_,adr) -> e:= !e ++
+                        | A_lident (_,adr) ->  e:= !e ++
                                         movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                         movq2idx (8*id+8) r9 adr rbp
+                        | A_constant (const, adr) -> e := !e ++
+                                traduit_a_const const ++
+                                movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                                movq (ind ~ofs:(const_adr const) rbp) (reg r8) ++
+                                cmpq (ind ~ofs:(8*id+8) r9) (reg r8) ++
+                                jne label_suite 
+
                         | _ -> failwith "ne sait pas encore faire 123"
                 ) patargs; !e) ++
 
@@ -253,10 +260,15 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin ++
                 label label_suite
-        | _ -> failwith "a faire 123"
+        | _ -> failwith "a faire 1234"
 
-
-                        
+and traduit_a_const = function
+        | A_int (i,adr) -> movq (imm i) (ind ~ofs:adr rbp)
+        | A_string (s,adr) -> let label_name = "_str_const_"^(string_of_int (compteur_str_const ())) in
+                        add_data ((label label_name) ++ (string s)) ;
+                        movq (ilab label_name) (ind ~ofs:adr rbp)
+        | A_bool (false,adr) -> movq (imm 0) (ind ~ofs:adr rbp)
+        | A_bool (true,adr) -> movq (imm 1) (ind ~ofs:adr rbp)
 
                         
 and traduit_a_atom = function
@@ -265,15 +277,8 @@ and traduit_a_atom = function
                 traduit_a_expr expr ++
                 movq2idx addr_result rbp addr rbp
         | A_constant (const, typ, addr) ->
-                let cstPtr = match const with
-                        | A_int i -> imm i
-                        | A_string s -> let label_name = "_str_const_"^(string_of_int (compteur_str_const ())) in
-                                        add_data ((label label_name) ++ (string s)) ;
-                                        (ilab label_name)
-                        | A_bool false -> imm 0
-                        | A_bool true -> imm 1
-                in
-                movq cstPtr (ind ~ofs:addr rbp)
+                traduit_a_const const ++
+                movq2idx (const_adr const) rbp addr rbp
         | A_lident (typ, addr) -> nop
         | A_uident (id, typ, addr) ->
                         movq (imm 8) (reg rdi) ++

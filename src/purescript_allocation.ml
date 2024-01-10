@@ -23,9 +23,9 @@ and a_patarg =
         | A_uident of int * int
         (* TODO *)
 and a_constant =
-        | A_bool of bool
-        | A_int of int
-        | A_string of string
+        | A_bool of bool * int
+        | A_int of int * int
+        | A_string of string * int
 and a_expr = (* le dernier int stoque l'adresse du résultat *)
         | A_atom of a_atom * typ * int
         | A_lident of ident * a_atom list * typ * int
@@ -87,6 +87,10 @@ let atom_typ : a_atom -> typ = function
         | A_expr (_,x,_) -> x
         | A_lident (x,_) -> x
         | A_uident (_,x,_) -> x
+let const_adr : a_constant -> int = function
+        | A_bool (_,x) -> x
+        | A_int (_,x) -> x
+        | A_string (_,x) -> x
 
 
 
@@ -126,7 +130,7 @@ and traduit_tdefn dico x =
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
 and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradction et le nouvel environnement *)
-        | TPconstant x -> A_constant (traduit_tconstant dico x, compteur () ), Smap.empty
+        | TPconstant x -> A_constant (traduit_tconstant dico compteur x, compteur () ), Smap.empty
         | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
         | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
         | _ -> failwith "pas encore def 2"
@@ -188,17 +192,17 @@ and traduit_texpr dico compteur env = function
                 A_case (e, b, typ, compteur () )
                 
 
-and traduit_tconstant dico = function
-        | TCbool x -> A_bool x 
-        | TCstring x -> A_string x
-        | TCint x -> A_int x
+and traduit_tconstant dico compteur = function
+        | TCbool x -> A_bool (x, compteur ()) 
+        | TCstring x -> A_string (x, compteur ())
+        | TCint x -> A_int (x, compteur ())
 
 and traduit_atom dico compteur env = function
-        | TAconstant (x,y) -> A_constant (traduit_tconstant dico x, y, compteur ())
+        | TAconstant (x,y) -> A_constant (traduit_tconstant dico compteur x, y, compteur ())
         | TAexpr (x,y) -> let expr = traduit_texpr dico compteur env x in A_expr (expr, y, expr_adr expr)
         | TAlident (ident, typ) -> begin
                 match ident with
-                | "unit" -> A_constant ( A_bool (true), typ, compteur () )
+                | "unit" -> A_constant ( A_bool (true, compteur ()), typ, compteur () )
                 | _ ->
                         let adr = Smap.find ident env in
                         A_lident (typ, adr)
