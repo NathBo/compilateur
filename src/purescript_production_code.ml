@@ -109,9 +109,8 @@ and traduit_a_expr = function
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 imulq (ind ~ofs:e2_adr rbp) (reg r8) ++
                                 movq (reg r8) (ind ~ofs:addr rbp)
-                        | Bdivide _ ->
-                                traduit_a_expr e2 ++
-                                failwith "la division est maintenant une fonction"
+                        | Bdivide _ | Bnotequals _ | Bsup _ | Bsupeq _ | Bcons _ ->
+                                failwith "'/', '!=', '>', '>=', '<>' sont transformés lors de l'allocation"
                         | Binf _ -> 
                                 traduit_a_expr e2 ++
                                 let label_num = string_of_int (compteur_inf ()) in
@@ -193,10 +192,7 @@ and traduit_a_expr = function
                                 movq (imm 0) (ind ~ofs:addr rbp) ++
                                 label label_fin
 
-
-
  
-                        | _ -> failwith "operation binaire pas encore suportee"
         end
         | A_let (bindings, expr, typ, addr) ->
                 List.fold_left (fun acc binding -> (
@@ -257,25 +253,22 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 jmp label_fin ++
                 label label_suite
         | A_patarg (A_constant (const, addr_compare)) ->
-                (*let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
                 traduit_a_const const ++
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
                 movq (ind ~ofs:(const_adr const) rbp) (reg r9) ++
-                cmpq (reg r9) (reg r8)++  (* egalite ne fonctionne pas pour les string *)
+                cmpq (reg r9) (reg r8)++  (* TODO egalite ne fonctionne pas pour les string *)
                 jne label_suite ++
                 traduit_a_expr expr_if_ok ++
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin ++
-                label label_suite*)
-                failwith "a corriger"
+                label label_suite
 
         | A_patarg (A_lident (_,adr)) -> 
-                (*movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
-                movq2idx 8 r9 adr rbp ++
+                movq2idx (adr_expr_test) rbp adr rbp ++
                 traduit_a_expr expr_if_ok ++
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
-                jmp label_fin *)
-                failwith "a corriger"
+                jmp label_fin
         | A_patarg (A_pattern (pattern,adr)) ->
                 (*let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
