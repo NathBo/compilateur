@@ -292,7 +292,7 @@ let unifyable tlist1 tlist2 =
       then aux ((Smap.find s !assoc)::q1) (t::q2)
       else (assoc := Smap.add s t !assoc;aux q1 q2)
     | t::q1,Tgeneral s::q2 -> aux tlist2 tlist1
-    | t1::_,t2::_-> print_endline ("On n'a pas pu unifier "^string_of_typ t1^" et "^string_of_typ t2);false
+    | t1::_,t2::_-> false
     | _ -> false in
   aux tlist1 tlist2
   
@@ -508,9 +508,9 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
     if not (checkexaustivelist env envtyps envinstances [t] (List.map (fun x -> [x]) (List.map (fun b -> b.pattern) blist))) then typingerror "Pattern non exhaustif" pos else (t',TEcase(e',l,t))
   )
   | Elident (f,alist,pos) -> let envinstances = Smap.union noconseqconflit envinstances (fourth (smapfind f !envfonctions pos))  in if mem f env then typingerror (f^" n'est pas une fonction") pos
-  else ((match thrd (smapfind f !envfonctions pos) with
-  | None -> ()
-  | Some cident -> let instances = smapfind cident envinstances pos in find_compatible_instance pos envinstances cident f general instances (List.map (fun a -> fst(typatom env envtyps envinstances general a)) alist));
+  else (let name = (match thrd (smapfind f !envfonctions pos) with
+  | None -> f
+  | Some cident -> let instances = smapfind cident envinstances pos in find_compatible_instance pos envinstances cident f general instances (List.map (fun a -> fst(typatom env envtyps envinstances general a)) alist)) in
     let tlist,t = (match fstr(smapfind f !envfonctions pos) with
     | Tarrow(tlist,t) -> tlist,t
     | _ -> failwith "pas possible") in
@@ -526,7 +526,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
               else dejapris := Smap.add s t' !dejapris;aux q1 q2)
         | _ -> let b = fst (typatom env envtyps envinstances general a) in if not( unifyable [b] [t]) then typingerror ("mauvais argument dans l'appel de "^f^", on s'attendait à du "^string_of_typ t^" mais du "^string_of_typ b^" a été donné") pos else aux q1 q2)
       | _ -> typingerror ("la fonction "^f^" ne prend pas autant d'arguments") pos) in
-      aux tlist alist; let trep = substitute !dejapris pos t in (trep,TElident(f,List.map (fun a -> snd(typatom env envtyps envinstances general a)) alist,trep)))
+      aux tlist alist; let trep = substitute !dejapris pos t in (trep,TElident(name,List.map (fun a -> snd(typatom env envtyps envinstances general a)) alist,trep)))
   | Euident (s,alist,pos) -> let constr = smapfind s !envconstructors pos in
     let matchingtt =  (List.map (typatom env envtyps envinstances general) alist)  in
     let matchingfst = unification (List.map fst matchingtt) constr.ctlist pos in
@@ -536,7 +536,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
 
 
 and find_compatible_instance pos envinstances cident f (general:bool) instances tlist =
-  print_endline ("On va essayer de trouver une instance pour les types"^string_of_typlist tlist);
+  let l = List.length (smapfind cident envinstances pos) in
   let slist,classenvfonctions,flist = smapfind cident !envclasses pos in
   let ftlist = match smapfind f classenvfonctions pos with
     | Tarrow(tlist,t) -> tlist
@@ -550,24 +550,25 @@ and find_compatible_instance pos envinstances cident f (general:bool) instances 
   let sm = constrsmap Smap.empty ftlist tlist in
   let listdestvar = List.map (fun s -> smapfind s sm pos) slist in
   let rec compatible dejapris tlist1 tlist2 = match tlist1,tlist2 with
-    | t1::q1,t2::q2 when t1 = t2 -> print_endline "c'est pareil";compatible dejapris q1 q2
-    | _,[] | [],_ -> print_endline "success";true
-    | Tcustom(s1,l1)::q1,Tcustom(s2,l2)::q2 when s1 = s2 -> print_endline "appel a cherchercompatible";cherchercompatible instances l2 && compatible dejapris q1 q2
-    | t1::q1,t2::q2 -> print_endline ("c a cause de "^string_of_typ t1^" et"^string_of_typ t2);false
+    | t1::q1,t2::q2 when t1 = t2 -> compatible dejapris q1 q2
+    | _,[] | [],_ -> true
+    | Tcustom(s1,l1)::q1,Tcustom(s2,l2)::q2 when s1 = s2 -> cherchercompatible instances l2 (List.length l2 -1) <> -1 && compatible dejapris q1 q2
+    | t1::q1,t2::q2 -> false
     (*| _ -> print_endline "bizarre";false*)
   and linstanceestdispo envinstances tlist ilist = match ilist with
     | [] -> false
     | tl::q -> (((not general) && compatible Smap.empty tl tlist) || (general && unifyable tl tlist)) || linstanceestdispo envinstances tlist q
   and touteslesinstancessontdispos pos envinstances averif = match averif with
     | [] -> true
-    | (s,tlist)::q -> print_endline ("hum"^string_of_typlist tlist);linstanceestdispo envinstances tlist (List.map fst (smapfind s envinstances pos))
-  and cherchercompatible tlistlist tlist = match tlistlist with
-    | [] -> print_bool general;false
-    | tl::q when ((not general) && (compatible Smap.empty (fst tl) tlist) || (general && unifyable (fst tl) tlist)) && (touteslesinstancessontdispos pos envinstances (snd tl)) -> true
-    | tl::q -> print_endline (string_of_typlist (fst tl));cherchercompatible q tlist in
-  if(not(cherchercompatible instances listdestvar))
+    | (s,tlist)::q -> linstanceestdispo envinstances tlist (List.map fst (smapfind s envinstances pos))
+  and cherchercompatible tlistlist tlist i = match tlistlist with
+    | [] -> i
+    | tl::q when ((not general) && (compatible Smap.empty (fst tl) tlist) || (general && unifyable (fst tl) tlist)) && (touteslesinstancessontdispos pos envinstances (snd tl)) -> i
+    | tl::q -> cherchercompatible q tlist (i-1) in
+  let a = cherchercompatible instances listdestvar (l-1) in
+  if(a = -1)
     then typingerror ("Pas d'instance compatible pour la classe "^cident^" dans l'appel de "^f^" avec les types "^string_of_typlist tlist^" en arguments") pos
-    else print_endline "okidoki"
+    else "."^cident^"."^f^"."^(string_of_int a)
 
 
 
@@ -765,7 +766,6 @@ else
   
 
 and checkforenddef (env:env) envtyps envinstances pos param = 
-  print_endline !lastdefined;
   let rec isanident p = match p with
     | Plident (s,pos) -> true
     | Ppattern (Ppatarg (p,_) ,pos) -> isanident p
@@ -868,7 +868,7 @@ and typinstance env envtyps envinstances i defpasreflist = match i with
       | Tgeneral s -> smapfind s substtable pos
       | _ -> t in
     let rep = List.map (fun (df:defn) -> (match fstr(smapfind df.ident !envfonctions pos) with 
-      | Tarrow(tlist,t) -> print_endline ("on lui envoie "^string_of_typlist (List.map (fun t -> subst t df.pos) tlist)) ;typdfn env envtyps envinstances false df (List.map (fun t -> subst t df.pos) tlist) (subst t df.pos)
+      | Tarrow(tlist,t) -> typdfn env envtyps envinstances false df (List.map (fun t -> subst t df.pos) tlist) (subst t df.pos)
       | _ -> failwith "c'est pas possible")) defpasreflist in
     let rec isanident p = match p with
       | Plident (s,_) -> true
