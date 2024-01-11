@@ -12,6 +12,7 @@ let compteur_inf_eq = creer_compteur ()
 let compteur_eq = creer_compteur ()
 let compteur_eq_string = creer_compteur ()
 let compteur_branch = creer_compteur ()
+let compteur_lazy = creer_compteur ()
 
 
 
@@ -89,26 +90,30 @@ and traduit_a_expr = function
                 )) nop lst ++
                 movq (imm 0) (ind ~ofs:addr rbp)
         | A_binop (bi, e1, e2, typ, addr) -> begin
-                traduit_a_expr e1 ++
-                traduit_a_expr e2 ++
+                traduit_a_expr e1 ++ (* on ne fait que e1 pour ne pas calculer e2 si pas besoin *)
                 let e1_adr = expr_adr e1 in
                 let e2_adr = expr_adr e2 in
                 match bi with
                         | Bplus _ ->
+                                traduit_a_expr e2 ++
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 addq (ind ~ofs:e2_adr rbp) (reg r8) ++
                                 movq (reg r8) (ind ~ofs:addr rbp)
                         | Bminus _ ->
+                                traduit_a_expr e2 ++
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 subq (ind ~ofs:e2_adr rbp) (reg r8) ++
                                 movq (reg r8) (ind ~ofs:addr rbp)
                         | Btimes _ ->
+                                traduit_a_expr e2 ++
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 imulq (ind ~ofs:e2_adr rbp) (reg r8) ++
                                 movq (reg r8) (ind ~ofs:addr rbp)
                         | Bdivide _ ->
+                                traduit_a_expr e2 ++
                                 failwith "la division est maintenant une fonction"
                         | Binf _ -> 
+                                traduit_a_expr e2 ++
                                 let label_num = string_of_int (compteur_inf ()) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 movq (ind ~ofs:e2_adr rbp) (reg r9) ++
@@ -120,6 +125,7 @@ and traduit_a_expr = function
                                 movq (imm 1) (ind ~ofs:addr rbp) ++
                                 label ("_binop_inf_fin_" ^ label_num)
                         | Binfeq _ -> 
+                                traduit_a_expr e2 ++
                                 let label_num = string_of_int (compteur_inf_eq ()) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 movq (ind ~ofs:e2_adr rbp) (reg r9) ++
@@ -131,6 +137,7 @@ and traduit_a_expr = function
                                 movq (imm 1) (ind ~ofs:addr rbp) ++
                                 label ("_binop_infeq_fin_" ^ label_num)
                         | Bequals _ -> begin
+                                traduit_a_expr e2 ++
                                 match (expr_typ e1) with
                                 | Int | Boolean ->
                                         let label_num = string_of_int (compteur_eq ()) in
@@ -162,14 +169,29 @@ and traduit_a_expr = function
                                 | _ -> failwith "égalite de ce type non supportée par Petit Purscript"
                         end
                         | Bor _ ->
+                                let label_true = "_or_lazy_true_" ^ (string_of_int (compteur_lazy ())) in
+                                let label_fin = "_or_lazy_" ^ (string_of_int (compteur_lazy ())) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
-                                orq (ind ~ofs:e2_adr rbp) (reg r8) ++
-                                movq (reg r8) (ind ~ofs:addr rbp)
+                                testq (reg r8) (reg r8) ++
+                                jne label_true ++
+                                movq2idx e2_adr rbp addr rbp ++
+                                jmp label_fin ++
+                                label label_true ++
+                                movq (imm 1) (ind ~ofs:addr rbp) ++
+                                label label_fin
 
                         | Band _ ->
+                                let label_false = "_and_lazy_false_" ^ (string_of_int (compteur_lazy ())) in
+                                let label_fin = "_and_lazy_" ^ (string_of_int (compteur_lazy ())) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
-                                andq (ind ~ofs:e2_adr rbp) (reg r8) ++
-                                movq (reg r8) (ind ~ofs:addr rbp)
+                                testq (reg r8) (reg r8) ++
+                                je label_false ++
+                                traduit_a_expr e2 ++
+                                movq2idx e2_adr rbp addr rbp ++
+                                jmp label_fin ++
+                                label label_false ++
+                                movq (imm 0) (ind ~ofs:addr rbp) ++
+                                label label_fin
 
 
 
@@ -284,15 +306,16 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                                 movq (ind ~ofs:(const_adr const) rbp) (reg r8) ++
                                 cmpq (reg r8) (ind ~ofs:(8*id+8) r9) ++
                                 jne label_suite 
-                        (*| A_pattern (pattern, adr) -> e := !e ++
-                                nop*)
+                        | A_pattern (pattern, adr) -> e := !e ++
+                                nop (* TODO *)
                         | A_uident (hash, adr) -> e := !e ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(8*id+8) r9) (reg r8) ++
                                 cmpq (imm hash) (ind r8)++
                                 jne label_suite 
+                                (* comparer les parametres... *)
 
-                        | _ -> failwith "ne sait pas encore faire 12356"
+                        (*| _ -> failwith "ne sait pas encore faire 12356" *)
                 ) patargs; !e) ++
 
                 traduit_a_expr expr_if_ok ++
