@@ -21,6 +21,7 @@ and a_patarg =
         | A_constant of a_constant * int
         | A_lident of ident * int
         | A_uident of int * int
+        | A_pattern of a_pattern * int
         (* TODO *)
 and a_constant =
         | A_bool of bool * int
@@ -133,6 +134,9 @@ and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradc
         | TPconstant x -> A_constant (traduit_tconstant dico compteur x, compteur () ), Smap.empty
         | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
         | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
+        | TPpattern pattern -> 
+                        let a_pattern, env = traduit_tpattern dico compteur pattern in
+                        A_pattern (a_pattern, compteur ()) , env
         | _ -> failwith "pas encore def 2"
 
 and traduit_texpr dico compteur env = function

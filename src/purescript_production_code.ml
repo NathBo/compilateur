@@ -254,6 +254,17 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin *)
                 failwith "a corriger"
+        | A_patarg (A_pattern (pattern,adr)) ->
+                (*let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
+                cmpq (imm num) (ind r8)++
+                jne label_suite ++
+                traduit_a_expr expr_if_ok ++
+                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                jmp label_fin ++
+                label label_suite ++ *)
+
+                traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin pattern
 
         | A_mulpatarg (hash, patargs) ->
                 let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
@@ -271,10 +282,17 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                                 traduit_a_const const ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(const_adr const) rbp) (reg r8) ++
-                                cmpq (ind ~ofs:(8*id+8) r9) (reg r8) ++
+                                cmpq (reg r8) (ind ~ofs:(8*id+8) r9) ++
+                                jne label_suite 
+                        (*| A_pattern (pattern, adr) -> e := !e ++
+                                nop*)
+                        | A_uident (hash, adr) -> e := !e ++
+                                movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                                movq (ind ~ofs:(8*id+8) r9) (reg r8) ++
+                                cmpq (imm hash) (ind r8)++
                                 jne label_suite 
 
-                        | _ -> failwith "ne sait pas encore faire 123"
+                        | _ -> failwith "ne sait pas encore faire 12356"
                 ) patargs; !e) ++
 
                 traduit_a_expr expr_if_ok ++
