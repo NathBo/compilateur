@@ -22,7 +22,6 @@ and a_patarg =
         | A_lident of ident * int
         | A_uident of int * int
         | A_pattern of a_pattern * int
-        (* TODO *)
 and a_constant =
         | A_bool of bool * int
         | A_int of int * int
@@ -137,7 +136,6 @@ and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradc
         | TPpattern pattern -> 
                         let a_pattern, env = traduit_tpattern dico compteur pattern in
                         A_pattern (a_pattern, compteur ()) , env
-        | _ -> failwith "pas encore def 2"
 
 and traduit_texpr dico compteur env = function
         | TEatom (x,y) ->
@@ -226,14 +224,14 @@ and traduit_tpattern dico compteur = function (* retourne une paire avec la a_pa
                         let lst_patarg = ref [] in
                         List.iter (fun x ->
                                 let p,e = traduit_tpatarg dico compteur x in
-                                env := Smap.union (fun _ -> failwith "union fail") !env e;
+                                env := Smap.union (fun ident a1 a2 -> if ident = "_" then Some a1 else failwith "union fail") !env e;
                                 lst_patarg := p :: !lst_patarg
                         ) tpatargs ;
                         A_mulpatarg (hash, !lst_patarg), !env
 
 and traduit_tbranch dico compteur env tbranch =
         let a_pattern, env_add = traduit_tpattern dico compteur tbranch.tpattern in
-        let nouv_env = Smap.union (fun _ -> failwith "union fail") env env_add in
+        let nouv_env = Smap.union (fun ident a1 a2 -> if ident = "_" then Some a1 else failwith "union fail") env env_add in
         {a_pattern = a_pattern ; expr = traduit_texpr dico compteur nouv_env tbranch.texpr}
 
 
@@ -249,6 +247,7 @@ and print_a_patarg fmt = function
         | A_lident (nom,adr) -> fprintf fmt "arg (%s | %d)" nom adr
         | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
         | A_uident (hash,adr) -> fprintf fmt "uident (%d,%d)" hash adr
+        | A_pattern (a_pattern,adr) -> fprintf fmt "pattern..."
 and print_a_expr fmt = function
         | A_atom (atm, typ, addr) -> fprintf fmt "atom : %a " print_a_atom atm
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
