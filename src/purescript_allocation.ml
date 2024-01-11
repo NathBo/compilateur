@@ -21,11 +21,11 @@ and a_patarg =
         | A_constant of a_constant * int
         | A_lident of ident * int
         | A_uident of int * int
-        (* TODO *)
+        | A_pattern of a_pattern * int
 and a_constant =
-        | A_bool of bool
-        | A_int of int
-        | A_string of string
+        | A_bool of bool * int
+        | A_int of int * int
+        | A_string of string * int
 and a_expr = (* le dernier int stoque l'adresse du résultat *)
         | A_atom of a_atom * typ * int
         | A_lident of ident * a_atom list * typ * int
@@ -47,6 +47,7 @@ and a_branch =
         {a_pattern : a_pattern ; expr : a_expr}
 and a_pattern =
         | A_patarg of a_patarg
+        | A_mulpatarg of int * a_patarg list
 
 let creer_8compteur () =
         let i = ref (0) in
@@ -86,6 +87,10 @@ let atom_typ : a_atom -> typ = function
         | A_expr (_,x,_) -> x
         | A_lident (x,_) -> x
         | A_uident (_,x,_) -> x
+let const_adr : a_constant -> int = function
+        | A_bool (_,x) -> x
+        | A_int (_,x) -> x
+        | A_string (_,x) -> x
 
 
 
@@ -104,25 +109,33 @@ and traduit_tdefn dico x =
 
         let arg_compteur = creer_8compteur_plus () in
         let env = ref Smap.empty in
-
+        
         let a_patargs = (List.map (fun patarg ->
+                let r,e = traduit_tpatarg dico arg_compteur patarg in
+                env := Smap.union (fun _ -> failwith "2 ident identiques") !env e;
+                r
+        ) x.tpatargs) in
+        
+        (*let a_patargs = (List.map (fun patarg ->
                 let r = traduit_tpatarg dico arg_compteur patarg in
                 (match r with
                         | A_lident (nom, addr) -> env := Smap.add nom addr !env
                         | _ -> ()
                 ); r
-        ) x.tpatargs) in
+        ) x.tpatargs) in *)
         
         let cmpt = creer_8compteur () in
         let a_expr = traduit_texpr dico cmpt !env x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
-and traduit_tpatarg dico compteur = function
-        | TPconstant x -> A_constant (traduit_tconstant dico x, compteur () )
-        | TPlident x -> A_lident (x, compteur ())
-        | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ())
-        | _ -> failwith "pas encore def 2"
+and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradction et le nouvel environnement *)
+        | TPconstant x -> A_constant (traduit_tconstant dico compteur x, compteur () ), Smap.empty
+        | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
+        | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
+        | TPpattern pattern -> 
+                        let a_pattern, env = traduit_tpattern dico compteur pattern in
+                        A_pattern (a_pattern, compteur ()) , env
 
 and traduit_texpr dico compteur env = function
         | TEatom (x,y) ->
@@ -180,19 +193,18 @@ and traduit_texpr dico compteur env = function
                 let b = List.map (traduit_tbranch dico compteur env) branchs in
                 A_case (e, b, typ, compteur () )
                 
-        | _ -> failwith "pas encore def 3"
 
-and traduit_tconstant dico = function
-        | TCbool x -> A_bool x 
-        | TCstring x -> A_string x
-        | TCint x -> A_int x
+and traduit_tconstant dico compteur = function
+        | TCbool x -> A_bool (x, compteur ()) 
+        | TCstring x -> A_string (x, compteur ())
+        | TCint x -> A_int (x, compteur ())
 
 and traduit_atom dico compteur env = function
-        | TAconstant (x,y) -> A_constant (traduit_tconstant dico x, y, compteur ())
+        | TAconstant (x,y) -> A_constant (traduit_tconstant dico compteur x, y, compteur ())
         | TAexpr (x,y) -> let expr = traduit_texpr dico compteur env x in A_expr (expr, y, expr_adr expr)
         | TAlident (ident, typ) -> begin
                 match ident with
-                | "unit" -> A_constant ( A_bool (true), typ, compteur () )
+                | "unit" -> A_constant ( A_bool (true, compteur ()), typ, compteur () )
                 | _ ->
                         let adr = Smap.find ident env in
                         A_lident (typ, adr)
@@ -204,10 +216,23 @@ and traduit_atom dico compteur env = function
                         A_uident (data_info.hash , typ, adr)
         | _ -> failwith "pas encore def 5"
 
-and traduit_tpattern dico compteur = function
-        | TPpatarg patarg -> A_patarg (traduit_tpatarg dico compteur patarg)
+and traduit_tpattern dico compteur = function (* retourne une paire avec la a_patern et l'environnement a ajouter *)
+        | TPpatarg patarg -> let a_patarg, env = traduit_tpatarg dico compteur patarg in (A_patarg a_patarg,env)
+        | TPmulpatarg (ident, tpatargs) ->
+                        let hash = (Smap.find ident dico).hash in
+                        let env = ref Smap.empty in
+                        let lst_patarg = ref [] in
+                        List.iter (fun x ->
+                                let p,e = traduit_tpatarg dico compteur x in
+                                env := Smap.union (fun ident a1 a2 -> if ident = "_" then Some a1 else failwith "union fail") !env e;
+                                lst_patarg := p :: !lst_patarg
+                        ) tpatargs ;
+                        A_mulpatarg (hash, !lst_patarg), !env
+
 and traduit_tbranch dico compteur env tbranch =
-        {a_pattern = traduit_tpattern dico compteur tbranch.tpattern ; expr = traduit_texpr dico compteur env tbranch.texpr}
+        let a_pattern, env_add = traduit_tpattern dico compteur tbranch.tpattern in
+        let nouv_env = Smap.union (fun ident a1 a2 -> if ident = "_" then Some a1 else failwith "union fail") env env_add in
+        {a_pattern = a_pattern ; expr = traduit_texpr dico compteur nouv_env tbranch.texpr}
 
 
 (* print *)
@@ -221,20 +246,24 @@ and print_a_defn fmt x =
 and print_a_patarg fmt = function
         | A_lident (nom,adr) -> fprintf fmt "arg (%s | %d)" nom adr
         | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
+        | A_uident (hash,adr) -> fprintf fmt "uident (%d,%d)" hash adr
+        | A_pattern (a_pattern,adr) -> fprintf fmt "pattern..."
 and print_a_expr fmt = function
-        | A_atom (atm, typ, addr) -> fprintf fmt "atom"
+        | A_atom (atm, typ, addr) -> fprintf fmt "atom : %a " print_a_atom atm
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
         | A_uident (info, param, typ, pos) -> fprintf fmt "appel de ... et range en %d : do {" pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
         | A_do (lst, typ, adr) -> fprintf fmt "do (stoque en %d) :  \n" adr ; List.iter (fun x -> (print_a_expr fmt x; fprintf fmt "\n")) lst
         | A_binop (_,_,_,_,_) -> fprintf fmt "binop"
         | A_let (_,expr,_,_) -> fprintf fmt "let... in " ; print_a_expr fmt expr
         | A_if (e1,e2,e3,typ,addr) -> fprintf fmt "if (%a) then (%a) else (%a)" print_a_expr e1 print_a_expr e2 print_a_expr e3
-        | A_case _ -> fprintf fmt "case..."
+        | A_case (expr, branchs, typ, adr) -> fprintf fmt "case {%a} et range en %d : " print_a_expr expr adr; List.iter (print_a_branch fmt) branchs
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr
         | A_lident (typ, adr) -> fprintf fmt "lident stoque en %d" adr
         | A_uident _ -> fprintf fmt "uident"
+and print_a_branch fmt branch = fprintf fmt " | ... -> %a ; " print_a_expr branch.expr
+
 
 
 
