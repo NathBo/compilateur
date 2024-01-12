@@ -35,6 +35,7 @@ and a_expr = (* le dernier int stoque l'adresse du résultat *)
         | A_let of a_binding list * a_expr * typ * int
         | A_if of a_expr * a_expr * a_expr * typ * int
         | A_case of a_expr * a_branch list * typ * int
+        | A_nop
 and a_atom =
         (* le dernier int stoque l'adresse *)
         | A_constant of a_constant * typ * int
@@ -68,6 +69,7 @@ let expr_adr : a_expr -> int = function
         | A_let (_,_,_,x) -> x
         | A_if (_,_,_,_,x) -> x
         | A_case (_,_,_,x) -> x
+        | A_nop -> 0
 let expr_typ : a_expr -> typ = function
         | A_atom (_,x,_) -> x
         | A_lident (_, _, x, _) -> x
@@ -77,6 +79,7 @@ let expr_typ : a_expr -> typ = function
         | A_let (_,_,x,_) -> x
         | A_if (_,_,_,x,_) -> x
         | A_case (_,_,x,_) -> x
+        | A_nop -> Unit
 let atom_adr : a_atom -> int = function
         | A_constant (_,_,x) -> x
         | A_expr (_,_,x) -> x
@@ -227,6 +230,7 @@ and traduit_tpattern dico compteur = function (* retourne une paire avec la a_pa
                                 env := Smap.union (fun ident a1 a2 -> if ident = "_" then Some a1 else failwith "union fail") !env e;
                                 lst_patarg := p :: !lst_patarg
                         ) tpatargs ;
+                        lst_patarg := List.rev !lst_patarg ;
                         A_mulpatarg (hash, !lst_patarg), !env
 
 and traduit_tbranch dico compteur env tbranch =
@@ -247,7 +251,7 @@ and print_a_patarg fmt = function
         | A_lident (nom,adr) -> fprintf fmt "arg (%s | %d)" nom adr
         | A_constant (cst,adr) -> fprintf fmt "arg (const | %d)" adr
         | A_uident (hash,adr) -> fprintf fmt "uident (%d,%d)" hash adr
-        | A_pattern (a_pattern,adr) -> fprintf fmt "pattern..."
+        | A_pattern (a_pattern,adr) -> fprintf fmt "pat %a" print_a_pattern a_pattern
 and print_a_expr fmt = function
         | A_atom (atm, typ, addr) -> fprintf fmt "atom : %a " print_a_atom atm
         | A_lident (fct, param, typ, pos) -> fprintf fmt "appel de %s et range en %d : do {" fct pos ; List.iter (print_a_atom fmt) param; fprintf fmt "}"
@@ -256,13 +260,17 @@ and print_a_expr fmt = function
         | A_binop (_,_,_,_,_) -> fprintf fmt "binop"
         | A_let (_,expr,_,_) -> fprintf fmt "let... in " ; print_a_expr fmt expr
         | A_if (e1,e2,e3,typ,addr) -> fprintf fmt "if (%a) then (%a) else (%a)" print_a_expr e1 print_a_expr e2 print_a_expr e3
-        | A_case (expr, branchs, typ, adr) -> fprintf fmt "case {%a} et range en %d : " print_a_expr expr adr; List.iter (print_a_branch fmt) branchs
+        | A_case (expr, branchs, typ, adr) -> fprintf fmt "case {%a} et range en %d : \n" print_a_expr expr adr; List.iter (print_a_branch fmt) branchs
+        | A_nop -> fprintf fmt "nop"
 and print_a_atom fmt = function
         | A_expr (expr, typ, addr) -> fprintf fmt "calcul (stoque en %d) de " addr; print_a_expr fmt expr
         | A_constant (conct,typ, addr) -> fprintf fmt "const stoquee en %d " addr
         | A_lident (typ, adr) -> fprintf fmt "lident stoque en %d" adr
         | A_uident _ -> fprintf fmt "uident"
-and print_a_branch fmt branch = fprintf fmt " | ... -> %a ; " print_a_expr branch.expr
+and print_a_branch fmt branch = fprintf fmt "  | %a -> %a \n" print_a_pattern branch.a_pattern print_a_expr branch.expr
+and print_a_pattern fmt = function
+        | A_patarg (a_patarg) -> fprintf fmt "patarg{%a}" print_a_patarg a_patarg
+        | A_mulpatarg (hash, a_patargs) -> fprintf fmt "multpatarg:%d{ " hash ; List.iter (print_a_patarg fmt) a_patargs
 
 
 

@@ -13,6 +13,7 @@ let compteur_eq = creer_compteur ()
 let compteur_eq_string = creer_compteur ()
 let compteur_branch = creer_compteur ()
 let compteur_lazy = creer_compteur ()
+let compteur_match = creer_compteur ()
 
 
 
@@ -72,12 +73,12 @@ and traduit_a_expr = function
                                 match atom_typ (List.hd params) with
                                         | Int -> "_show_int"
                                         | Boolean -> "_show_bool"
-                                        | _ -> "_show_undeg"
+                                        | _ -> "_show_undef"
                                 end
                         | _ -> fct in
                 call fct_string ++ 
 
-                List.fold_left (fun acc atom -> acc ++ (   (* reflechir au bon sens *)
+                List.fold_left (fun acc atom -> acc ++ (
                         popq r8
                 )) nop params ++
                 (if ((List.length params) mod 2) = 1 then popq r8 else nop) ++
@@ -237,6 +238,7 @@ and traduit_a_expr = function
                                 movq (ind ~ofs:addr rbp) (reg r9) ++
                                 movq2idx (atom_adr atom) rbp (8*id) r9
                         )),(id+1)) (nop,1) atoms)
+        | A_nop -> nop
 
 
 
@@ -289,19 +291,24 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 
                 (
                 let e = ref nop in
-                List.iteri (fun (id:int) (patarg:a_patarg) : unit -> match patarg with
-                        | A_lident (_,adr) ->  e:= !e ++
+                List.iteri (fun (id:int) (patarg:a_patarg) : unit -> Printf.printf ">>>>>id=%d<<<<<\n" id ; match patarg with
+                        | A_lident (_,adr) ->  Printf.printf "LIDENT\n" ; e:= !e ++
                                         movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                         movq2idx (8*id+8) r9 adr rbp
-                        | A_constant (const, adr) -> e := !e ++
+                        | A_constant (const, adr) -> Printf.printf "CONST\n" ; e := !e ++
                                 traduit_a_const const ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(const_adr const) rbp) (reg r8) ++
                                 cmpq (reg r8) (ind ~ofs:(8*id+8) r9) ++
                                 jne label_suite 
                         | A_pattern (pattern, adr) -> e := !e ++
-                                nop (* TODO *)
-                        | A_uident (hash, adr) -> e := !e ++
+                                let label_match = "_match_" ^ (string_of_int (compteur_match ())) in
+                                movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
+                                movq2idx (8*id+8) r9 adr rbp ++
+                                traduit_a_pattern adr adr_result A_nop label_match pattern ++
+                                jmp label_suite ++
+                                label label_match
+                        | A_uident (hash, adr) -> Printf.printf "UIDENT\n" ; e := !e ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(8*id+8) r9) (reg r8) ++
                                 cmpq (imm hash) (ind r8)++
