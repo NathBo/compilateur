@@ -126,92 +126,282 @@ pure:
 	movq $0, %rax
 	leave
 	ret
-main:
-	enter $304, $0
-	movq $_str_const_0, -16(%rbp)
-	movq -16(%rbp), %rax
+printaux:
+	enter $192, $0
+	movq 24(%rbp), %rax
+	movq %rax, -8(%rbp)
+	movq -8(%rbp), %r8
+	cmpq $0, 0(%r8)
+	jne _branch_3
+	movq 16(%rbp), %rax
 	movq %rax, -24(%rbp)
 	movq -24(%rbp), %rax
-	movq %rax, -8(%rbp)
-	movq -8(%rbp), %rax
-	movq %rax, -32(%rbp)
-	movq -32(%rbp), %rax
-	movq %rax, -40(%rbp)
-	pushq $0
-	pushq -40(%rbp)
-	call log
-	popq %r8
-	popq %r8
-	movq %rax, -48(%rbp)
-	movq $_str_const_2, -72(%rbp)
-	movq -72(%rbp), %rax
-	movq %rax, -80(%rbp)
-	movq -80(%rbp), %rax
-	movq %rax, -56(%rbp)
-	movq $_str_const_1, -88(%rbp)
-	movq -88(%rbp), %rax
-	movq %rax, -96(%rbp)
-	movq -96(%rbp), %rax
-	movq %rax, -64(%rbp)
-	movq -56(%rbp), %rax
-	movq %rax, -104(%rbp)
-	movq -104(%rbp), %rax
-	movq %rax, -112(%rbp)
-	pushq $0
-	pushq -112(%rbp)
-	call log
-	popq %r8
-	popq %r8
-	movq %rax, -120(%rbp)
-	movq $_str_const_4, -144(%rbp)
-	movq -144(%rbp), %rax
-	movq %rax, -152(%rbp)
-	movq -152(%rbp), %rax
-	movq %rax, -128(%rbp)
-	movq $_str_const_3, -160(%rbp)
-	movq -160(%rbp), %rax
-	movq %rax, -168(%rbp)
-	movq -168(%rbp), %rax
-	movq %rax, -136(%rbp)
-	movq -136(%rbp), %rax
-	movq %rax, -176(%rbp)
-	movq -176(%rbp), %rax
 	movq %rax, -184(%rbp)
-	pushq $0
-	pushq -184(%rbp)
-	call log
-	popq %r8
-	popq %r8
-	movq %rax, -192(%rbp)
-	movq $_str_const_6, -216(%rbp)
-	movq -216(%rbp), %rax
-	movq %rax, -224(%rbp)
-	movq -224(%rbp), %rax
-	movq %rax, -200(%rbp)
-	movq $_str_const_5, -232(%rbp)
-	movq -232(%rbp), %rax
-	movq %rax, -240(%rbp)
-	movq -240(%rbp), %rax
-	movq %rax, -208(%rbp)
-	movq -200(%rbp), %rax
-	movq %rax, -248(%rbp)
-	movq -208(%rbp), %rax
-	movq %rax, -256(%rbp)
-	pushq -256(%rbp)
-	pushq -248(%rbp)
+	jmp _branch_fin_0
+_branch_3:
+	movq -8(%rbp), %r8
+	cmpq $1, 0(%r8)
+	jne _branch_2
+	movq -8(%rbp), %r9
+	movq 8(%r9), %rax
+	movq %rax, -48(%rbp)
+	movq $0, -40(%rbp)
+	movq -8(%rbp), %r9
+	movq -40(%rbp), %r8
+	cmpq %r8, 16(%r9)
+	jne _branch_2
+	movq 16(%rbp), %rax
+	movq %rax, -64(%rbp)
+	movq $_str_const_1, -80(%rbp)
+	movq -80(%rbp), %rax
+	movq %rax, -72(%rbp)
+	movq -72(%rbp), %rax
+	movq %rax, -88(%rbp)
+	pushq -88(%rbp)
+	pushq -64(%rbp)
 	call _concat
 	popq %r8
 	popq %r8
-	movq %rax, -264(%rbp)
-	movq -264(%rbp), %rax
-	movq %rax, -272(%rbp)
+	movq %rax, -96(%rbp)
+	pushq -48(%rbp)
+	pushq -96(%rbp)
+	call printaux
+	popq %r8
+	popq %r8
+	movq %rax, -104(%rbp)
+	movq -104(%rbp), %rax
+	movq %rax, -184(%rbp)
+	jmp _branch_fin_0
+_branch_2:
+	movq -8(%rbp), %r8
+	cmpq $1, 0(%r8)
+	jne _branch_1
+	movq -8(%rbp), %r9
+	movq 8(%r9), %rax
+	movq %rax, -120(%rbp)
+	movq -8(%rbp), %r9
+	movq 16(%r9), %rax
+	movq %rax, -112(%rbp)
+	movq 16(%rbp), %rax
+	movq %rax, -136(%rbp)
+	movq $_str_const_0, -152(%rbp)
+	movq -152(%rbp), %rax
+	movq %rax, -144(%rbp)
+	movq -144(%rbp), %rax
+	movq %rax, -160(%rbp)
+	pushq -160(%rbp)
+	pushq -136(%rbp)
+	call _concat
+	popq %r8
+	popq %r8
+	movq %rax, -168(%rbp)
+	pushq -120(%rbp)
+	pushq -168(%rbp)
+	call printaux
+	popq %r8
+	popq %r8
+	movq %rax, -176(%rbp)
+	movq -176(%rbp), %rax
+	movq %rax, -184(%rbp)
+	jmp _branch_fin_0
+_branch_1:
+	movq $0, -184(%rbp)
+_branch_fin_0:
+	movq -184(%rbp), %rax
+	leave
+	ret
+.Show.show.2:
+	enter $32, $0
+	movq $_str_const_2, -16(%rbp)
+	movq -16(%rbp), %rax
+	movq %rax, -8(%rbp)
+	pushq 16(%rbp)
+	pushq -8(%rbp)
+	call printaux
+	popq %r8
+	popq %r8
+	movq %rax, -24(%rbp)
+	movq -24(%rbp), %rax
+	leave
+	ret
+next:
+	enter $160, $0
+	movq 24(%rbp), %rax
+	movq %rax, -8(%rbp)
+	movq -8(%rbp), %r8
+	cmpq $0, 0(%r8)
+	jne _branch_6
+	movq $24, %rdi
+	call malloc
+	movq %rax, -48(%rbp)
+	movq $1, 0(%rax)
+	movq $1, -32(%rbp)
+	movq -32(%rbp), %rax
+	movq %rax, -24(%rbp)
+	movq -48(%rbp), %r9
+	movq -24(%rbp), %rax
+	movq %rax, 8(%r9)
+	movq $8, %rdi
+	call malloc
+	movq $0, 0(%rax)
+	movq %rax, -40(%rbp)
+	movq -48(%rbp), %r9
+	movq -40(%rbp), %rax
+	movq %rax, 16(%r9)
+	movq -48(%rbp), %rax
+	movq %rax, -144(%rbp)
+	jmp _branch_fin_4
+_branch_6:
+	movq -8(%rbp), %r8
+	cmpq $1, 0(%r8)
+	jne _branch_5
+	movq -8(%rbp), %r9
+	movq 8(%r9), %rax
+	movq %rax, -64(%rbp)
+	movq -8(%rbp), %r9
+	movq 16(%r9), %rax
+	movq %rax, -56(%rbp)
+	movq $24, %rdi
+	call malloc
+	movq %rax, -136(%rbp)
+	movq $1, 0(%rax)
+	movq 16(%rbp), %rax
+	movq %rax, -80(%rbp)
+	movq -56(%rbp), %rax
+	movq %rax, -88(%rbp)
+	movq -80(%rbp), %r8
+	addq -88(%rbp), %r8
+	movq %r8, -96(%rbp)
+	movq $7, -112(%rbp)
+	movq -112(%rbp), %rax
+	movq %rax, -104(%rbp)
+	pushq -104(%rbp)
+	pushq -96(%rbp)
+	call mod
+	popq %r8
+	popq %r8
+	movq %rax, -120(%rbp)
+	movq -136(%rbp), %r9
+	movq -120(%rbp), %rax
+	movq %rax, 8(%r9)
+	pushq -64(%rbp)
+	pushq -56(%rbp)
+	call next
+	popq %r8
+	popq %r8
+	movq %rax, -128(%rbp)
+	movq -136(%rbp), %r9
+	movq -128(%rbp), %rax
+	movq %rax, 16(%r9)
+	movq -136(%rbp), %rax
+	movq %rax, -144(%rbp)
+	jmp _branch_fin_4
+_branch_5:
+	movq $0, -144(%rbp)
+_branch_fin_4:
+	movq -144(%rbp), %rax
+	leave
+	ret
+pascal:
+	enter $160, $0
+	movq 24(%rbp), %rax
+	movq %rax, -8(%rbp)
+	movq 32(%rbp), %rax
+	movq %rax, -16(%rbp)
+	movq -8(%rbp), %r8
+	movq -16(%rbp), %r9
+	cmpq %r9, %r8
+	jl _binop_inf_0
+	movq $0, -24(%rbp)
+	jmp _binop_inf_fin_0
+_binop_inf_0:
+	movq $1, -24(%rbp)
+_binop_inf_fin_0:
+	cmpq $0, -24(%rbp)
+	je _if_lab_false_0
 	pushq $0
-	pushq -272(%rbp)
+	pushq 16(%rbp)
+	call .Show.show.2
+	popq %r8
+	popq %r8
+	movq %rax, -32(%rbp)
+	pushq $0
+	pushq -32(%rbp)
 	call log
 	popq %r8
 	popq %r8
-	movq %rax, -280(%rbp)
-	movq $0, -288(%rbp)
+	movq %rax, -40(%rbp)
+	movq $0, -56(%rbp)
+	movq -56(%rbp), %rax
+	movq %rax, -48(%rbp)
+	pushq 16(%rbp)
+	pushq -48(%rbp)
+	call next
+	popq %r8
+	popq %r8
+	movq %rax, -64(%rbp)
+	movq 24(%rbp), %rax
+	movq %rax, -72(%rbp)
+	movq $1, -88(%rbp)
+	movq -88(%rbp), %rax
+	movq %rax, -80(%rbp)
+	movq -80(%rbp), %rax
+	movq %rax, -96(%rbp)
+	movq -72(%rbp), %r8
+	addq -96(%rbp), %r8
+	movq %r8, -104(%rbp)
+	pushq $0
+	pushq 32(%rbp)
+	pushq -104(%rbp)
+	pushq -64(%rbp)
+	call pascal
+	popq %r8
+	popq %r8
+	popq %r8
+	popq %r8
+	movq %rax, -112(%rbp)
+	movq $0, -120(%rbp)
+	movq -120(%rbp), %rax
+	movq %rax, -152(%rbp)
+	jmp _if_lab_end_0
+_if_lab_false_0:
+	movq $1, -136(%rbp)
+	movq -136(%rbp), %rax
+	movq %rax, -128(%rbp)
+	pushq $0
+	pushq -128(%rbp)
+	call pure
+	popq %r8
+	popq %r8
+	movq %rax, -144(%rbp)
+	movq -144(%rbp), %rax
+	movq %rax, -152(%rbp)
+_if_lab_end_0:
+	movq $0, %rax
+	leave
+	ret
+main:
+	enter $64, $0
+	movq $8, %rdi
+	call malloc
+	movq $0, 0(%rax)
+	movq %rax, -8(%rbp)
+	movq $0, -24(%rbp)
+	movq -24(%rbp), %rax
+	movq %rax, -16(%rbp)
+	movq $42, -40(%rbp)
+	movq -40(%rbp), %rax
+	movq %rax, -32(%rbp)
+	pushq $0
+	pushq -32(%rbp)
+	pushq -16(%rbp)
+	pushq -8(%rbp)
+	call pascal
+	popq %r8
+	popq %r8
+	popq %r8
+	popq %r8
+	movq %rax, -48(%rbp)
 	movq $0, %rax
 	leave
 	ret
@@ -227,16 +417,8 @@ _true:
 _false:
 	.string "false"
 _str_const_0:
-	.string "a"
+	.string "*"
 _str_const_1:
-	.string "b"
+	.string "."
 _str_const_2:
-	.string "a"
-_str_const_3:
-	.string "b"
-_str_const_4:
-	.string "a"
-_str_const_5:
-	.string "b"
-_str_const_6:
-	.string "a"
+	.string ""

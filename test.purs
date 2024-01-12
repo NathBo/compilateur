@@ -4,36 +4,30 @@ import Prelude
 import Effect
 import Effect.Console
 
-data Pair a b = P a b
-data List a = Nil | Zero (List (Pair a a)) | One a (List (Pair a a))
+-- triangle de Pascal modulo 7
 
-cons:: forall a. a -> List a -> List a
-cons x Nil       = One x Nil
-cons x (Zero l)  = One x l
-cons x (One y l) = Zero (cons (P x y) l)
+data List a = Nil | Cons a (List a)
 
-create:: Int -> List Int
-create 0 = Nil
-create n = cons (n-1) (create (n-1))
+printaux:: String -> List Int -> String
+printaux acc Nil        = acc
+printaux acc (Cons 0 l) = printaux (acc <> ".") l
+printaux acc (Cons _ l) = printaux (acc <> "*") l
 
-make:: forall a. Int -> a -> List a
-make 0 _ = Nil
-make n v = let l = make (n/2) (P v v) in
-           if mod n 2 == 0 then Zero l else One v l
+instance Show (List Int) where
+  show l = printaux "" l
 
-instance (Show a, Show b) => Show (Pair a b) where
-  show (P x y) = show x <> "," <> show y
+next:: Int -> List Int -> List Int
+next p Nil        = Cons 1 Nil
+next p (Cons x r) = Cons (mod (p+x) 7) (next x r)
 
-instance Show a => Show (List a) where
-  show Nil       = ""
-  show (Zero l)  = "Z" <> show l
-  show (One x l) = "O(" <> show x <> ")" <> show l
+pascal:: List Int -> Int -> Int -> Effect Unit
+pascal r i n =
+  if i < n then do log (show r)
+                   pascal (next 0 r) (i+1) n
+           else pure unit
 
 main :: Effect Unit
-main = do log (show (create 4))
-          log (show (create 10))
-          log (show (create 42))
-          log (show (make 4 1))
-          log (show (make 10 2))
-          log (show (make 42 3))
+main = pascal Nil 0 42
+
+
 
