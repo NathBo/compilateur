@@ -291,11 +291,11 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 
                 (
                 let e = ref nop in
-                List.iteri (fun (id:int) (patarg:a_patarg) : unit -> Printf.printf ">>>>>id=%d<<<<<\n" id ; match patarg with
-                        | A_lident (_,adr) ->  Printf.printf "LIDENT\n" ; e:= !e ++
+                List.iteri (fun (id:int) (patarg:a_patarg) : unit -> match patarg with
+                        | A_lident (_,adr) -> e:= !e ++
                                         movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                         movq2idx (8*id+8) r9 adr rbp
-                        | A_constant (const, adr) -> Printf.printf "CONST\n" ; e := !e ++
+                        | A_constant (const, adr) -> e := !e ++
                                 traduit_a_const const ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(const_adr const) rbp) (reg r8) ++
@@ -308,7 +308,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                                 traduit_a_pattern adr adr_result A_nop label_match pattern ++
                                 jmp label_suite ++
                                 label label_match
-                        | A_uident (hash, adr) -> Printf.printf "UIDENT\n" ; e := !e ++
+                        | A_uident (hash, adr) -> e := !e ++
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq (ind ~ofs:(8*id+8) r9) (reg r8) ++
                                 cmpq (imm hash) (ind r8)++
