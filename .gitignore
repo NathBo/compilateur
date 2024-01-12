@@ -13,3 +13,5 @@ ppurs
 *.log
 spago-project
 *.s
+*.out
+a
