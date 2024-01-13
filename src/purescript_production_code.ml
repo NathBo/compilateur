@@ -59,7 +59,7 @@ and traduit_a_expr = function
 
                 (* placer les params au bon endroit *)
                 (* si nb impair de params *)
-                (if ((List.length params) mod 2) = 1 then pushq (imm 0) else nop) ++
+                (if ((List.length params) mod 2) = 1 then subq (imm 8) (reg rsp) else nop) ++ (* pushq *)
 
                 List.fold_left (fun acc atom -> (
                         pushq (ind ~ofs:(atom_adr atom) rbp)
@@ -76,10 +76,7 @@ and traduit_a_expr = function
                         | _ -> fct in
                 call fct_string ++ 
 
-                List.fold_left (fun acc atom -> acc ++ (
-                        popq r8
-                )) nop params ++
-                (if ((List.length params) mod 2) = 1 then popq r8 else nop) ++
+                let pop_size = next_mult_16 (8*List.length params) in addq (imm pop_size) (reg rsp) ++
 
                 movq (reg rax) (ind ~ofs:addr rbp)
         end
