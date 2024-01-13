@@ -12,7 +12,6 @@ type a_file = a_tdecl list
 
 and a_tdecl =
         | A_defn of a_defn
-        (* TODO *)
 
 and a_defn =
         {a_ident : ident; a_patargs : a_patarg list ; a_expr : a_expr ; tableau_activation : int}
@@ -109,7 +108,6 @@ and traduit_tvdecl class_dico = function
         | _ -> failwith "pas encore def 1"
 
 and traduit_tdefn dico x =
-
         let arg_compteur = creer_8compteur_plus () in
         let env = ref Smap.empty in
         
@@ -119,20 +117,12 @@ and traduit_tdefn dico x =
                 r
         ) x.tpatargs) in
         
-        (*let a_patargs = (List.map (fun patarg ->
-                let r = traduit_tpatarg dico arg_compteur patarg in
-                (match r with
-                        | A_lident (nom, addr) -> env := Smap.add nom addr !env
-                        | _ -> ()
-                ); r
-        ) x.tpatargs) in *)
-        
         let cmpt = creer_8compteur () in
         let a_expr = traduit_texpr dico cmpt !env x.texpr in
         let taille = abs (cmpt ()) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
-and traduit_tpatarg dico compteur = function (* retourne une paire avec la tradction et le nouvel environnement *)
+and traduit_tpatarg dico compteur = function (* retourne une paire avec la traduction et le nouvel environnement *)
         | TPconstant x -> A_constant (traduit_tconstant dico compteur x, compteur () ), Smap.empty
         | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
         | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
@@ -219,7 +209,7 @@ and traduit_atom dico compteur env = function
                         A_uident (data_info.hash , typ, adr)
         | _ -> failwith "pas encore def 5"
 
-and traduit_tpattern dico compteur = function (* retourne une paire avec la a_patern et l'environnement a ajouter *)
+and traduit_tpattern dico compteur = function (* retourne une paire avec le a_patern et l'environnement a ajouter *)
         | TPpatarg patarg -> let a_patarg, env = traduit_tpatarg dico compteur patarg in (A_patarg a_patarg,env)
         | TPmulpatarg (ident, tpatargs) ->
                         let hash = (Smap.find ident dico).hash in

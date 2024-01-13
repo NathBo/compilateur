@@ -256,15 +256,31 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 label label_suite
         | A_patarg (A_constant (const, addr_compare)) ->
                 let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
-                traduit_a_const const ++
-                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
-                movq (ind ~ofs:(const_adr const) rbp) (reg r9) ++
-                cmpq (reg r9) (reg r8)++  (* TODO egalite ne fonctionne pas pour les string *)
-                jne label_suite ++
-                traduit_a_expr expr_if_ok ++
-                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
-                jmp label_fin ++
-                label label_suite
+                begin match const with
+                | A_bool _ | A_int _ ->
+                        traduit_a_const const ++
+                        movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
+                        movq (ind ~ofs:(const_adr const) rbp) (reg r9) ++
+                        cmpq (reg r9) (reg r8)++
+                        jne label_suite ++
+                        traduit_a_expr expr_if_ok ++
+                        movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                        jmp label_fin ++
+                        label label_suite
+                | A_string _ ->
+                        traduit_a_const const ++
+                        movq (ind ~ofs:adr_expr_test rbp) (reg rdi) ++
+                        movq (ind ~ofs:(const_adr const) rbp) (reg rsi) ++
+                        call "strcmp" ++
+                        testq (reg rax) (reg rax) ++
+                        jnz label_suite ++
+                        traduit_a_expr expr_if_ok ++
+                        movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
+                        jmp label_fin ++
+                        label label_suite
+                end
+
+
 
         | A_patarg (A_lident (_,adr)) -> 
                 movq2idx (adr_expr_test) rbp adr rbp ++
@@ -272,15 +288,6 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
                 jmp label_fin
         | A_patarg (A_pattern (pattern,adr)) ->
-                (*let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
-                movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
-                cmpq (imm num) (ind r8)++
-                jne label_suite ++
-                traduit_a_expr expr_if_ok ++
-                movq2idx (expr_adr expr_if_ok) rbp adr_result rbp ++
-                jmp label_fin ++
-                label label_suite ++ *)
-
                 traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin pattern
 
         | A_mulpatarg (hash, patargs) ->
@@ -313,9 +320,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                                 movq (ind ~ofs:(8*id+8) r9) (reg r8) ++
                                 cmpq (imm hash) (ind r8)++
                                 jne label_suite 
-                                (* comparer les parametres... *)
 
-                        (*| _ -> failwith "ne sait pas encore faire 12356" *)
                 ) patargs; !e) ++
 
                 traduit_a_expr expr_if_ok ++
