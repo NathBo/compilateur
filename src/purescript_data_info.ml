@@ -8,14 +8,10 @@ type data_info = {hash : int ; size : int }
 type class_info = data_info Smap.t
 
 
-let creer_compteur () =
-        let i = ref (-1) in
-        (fun () -> (incr i; !i))
-
 let build_class_info possibilites =
-        let cmpt = creer_compteur () in
+        let cmpt = Compteur.make 1 0 in
         let info = ref Smap.empty in 
-        List.iter (fun possi -> info := Smap.add (fst possi) {hash = cmpt () ; size = List.length (snd possi)} !info) possibilites;
+        List.iter (fun possi -> info := Smap.add (fst possi) {hash = Compteur.get cmpt ; size = List.length (snd possi)} !info) possibilites;
         !info
 
 let build_class_dico prog =

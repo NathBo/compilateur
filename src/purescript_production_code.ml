@@ -2,18 +2,16 @@ open X86_64
 open Purescript_allocation
 
 let next_mult_16 a = a + (a mod 16)
-let creer_compteur () =
-        let i = ref (-1) in
-        (fun () -> (incr i; !i))
-let compteur_str_const = creer_compteur ()
-let compteur_if = creer_compteur ()
-let compteur_inf = creer_compteur ()
-let compteur_inf_eq = creer_compteur ()
-let compteur_eq = creer_compteur ()
-let compteur_eq_string = creer_compteur ()
-let compteur_branch = creer_compteur ()
-let compteur_lazy = creer_compteur ()
-let compteur_match = creer_compteur ()
+
+let compteur_str_const = Compteur.make 1 0
+let compteur_if = Compteur.make 1 0
+let compteur_inf = Compteur.make 1 0
+let compteur_inf_eq = Compteur.make 1 0
+let compteur_eq = Compteur.make 1 0
+let compteur_eq_string = Compteur.make 1 0
+let compteur_branch = Compteur.make 1 0
+let compteur_lazy = Compteur.make 1 0
+let compteur_match = Compteur.make 1 0
 
 
 
@@ -114,7 +112,7 @@ and traduit_a_expr = function
                                 failwith "'/', '!=', '>', '>=', '<>' sont transformés lors de l'allocation"
                         | Binf _ -> 
                                 traduit_a_expr e2 ++
-                                let label_num = string_of_int (compteur_inf ()) in
+                                let label_num = string_of_int (Compteur.get compteur_inf) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 movq (ind ~ofs:e2_adr rbp) (reg r9) ++
                                 cmpq (reg r9) (reg r8) ++
@@ -126,7 +124,7 @@ and traduit_a_expr = function
                                 label ("_binop_inf_fin_" ^ label_num)
                         | Binfeq _ -> 
                                 traduit_a_expr e2 ++
-                                let label_num = string_of_int (compteur_inf_eq ()) in
+                                let label_num = string_of_int (Compteur.get compteur_inf_eq) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 movq (ind ~ofs:e2_adr rbp) (reg r9) ++
                                 cmpq (reg r9) (reg r8) ++
@@ -140,7 +138,7 @@ and traduit_a_expr = function
                                 traduit_a_expr e2 ++
                                 match (expr_typ e1) with
                                 | Int | Boolean ->
-                                        let label_num = string_of_int (compteur_eq ()) in
+                                        let label_num = string_of_int (Compteur.get compteur_eq) in
                                         movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                         movq (ind ~ofs:e2_adr rbp) (reg r9) ++
                                         cmpq (reg r8) (reg r9) ++
@@ -152,7 +150,7 @@ and traduit_a_expr = function
                                         label ("_binop_eq_fin_" ^ label_num)
  
                                 | String ->
-                                        let label_num = string_of_int (compteur_eq_string ()) in
+                                        let label_num = string_of_int (Compteur.get compteur_eq_string) in
                                         movq (ind ~ofs:e1_adr rbp) (reg rdi) ++
                                         movq (ind ~ofs:e2_adr rbp) (reg rsi) ++
                                         call "strcmp" ++
@@ -169,8 +167,8 @@ and traduit_a_expr = function
                                 | _ -> failwith "égalite de ce type non supportée par Petit Purscript"
                         end
                         | Bor _ ->
-                                let label_true = "_or_lazy_true_" ^ (string_of_int (compteur_lazy ())) in
-                                let label_fin = "_or_lazy_" ^ (string_of_int (compteur_lazy ())) in
+                                let label_true = "_or_lazy_true_" ^ (string_of_int (Compteur.get compteur_lazy)) in
+                                let label_fin = "_or_lazy_" ^ (string_of_int (Compteur.get compteur_lazy)) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 testq (reg r8) (reg r8) ++
                                 jne label_true ++
@@ -181,8 +179,8 @@ and traduit_a_expr = function
                                 label label_fin
 
                         | Band _ ->
-                                let label_false = "_and_lazy_false_" ^ (string_of_int (compteur_lazy ())) in
-                                let label_fin = "_and_lazy_" ^ (string_of_int (compteur_lazy ())) in
+                                let label_false = "_and_lazy_false_" ^ (string_of_int (Compteur.get compteur_lazy)) in
+                                let label_fin = "_and_lazy_" ^ (string_of_int (Compteur.get compteur_lazy)) in
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 testq (reg r8) (reg r8) ++
                                 je label_false ++
@@ -204,7 +202,7 @@ and traduit_a_expr = function
                 traduit_a_expr expr ++
                 movq2idx (expr_adr expr) rbp addr rbp
         | A_if (e1, e2, e3, typ, addr) ->
-                        let lab_num = string_of_int (compteur_if ()) in
+                        let lab_num = string_of_int (Compteur.get compteur_if) in
                         traduit_a_expr e1 ++
                         cmpq (imm 0) (ind ~ofs:(expr_adr e1) rbp) ++
                         je ("_if_lab_false_" ^ lab_num) ++
@@ -218,7 +216,7 @@ and traduit_a_expr = function
         | A_case (expr, possibilites, typ, addr) -> begin
                         traduit_a_expr expr ++
 
-                        let label_fin = "_branch_fin_" ^ (string_of_int (compteur_branch ())) in
+                        let label_fin = "_branch_fin_" ^ (string_of_int (Compteur.get compteur_branch)) in
                         let rec test_branch = function
                                 | [] -> 
                                         movq (imm 0) (ind ~ofs:addr rbp)
@@ -246,7 +244,7 @@ and traduit_a_expr = function
 
 and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
         | A_patarg (A_uident (num, addr_compare)) ->
-                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                let label_suite = "_branch_" ^ (string_of_int (Compteur.get compteur_branch)) in
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
                 cmpq (imm num) (ind r8)++
                 jne label_suite ++
@@ -255,7 +253,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 jmp label_fin ++
                 label label_suite
         | A_patarg (A_constant (const, addr_compare)) ->
-                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                let label_suite = "_branch_" ^ (string_of_int (Compteur.get compteur_branch)) in
                 begin match const with
                 | A_bool _ | A_int _ ->
                         traduit_a_const const ++
@@ -291,7 +289,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                 traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin pattern
 
         | A_mulpatarg (hash, patargs) ->
-                let label_suite = "_branch_" ^ (string_of_int (compteur_branch ())) in
+                let label_suite = "_branch_" ^ (string_of_int (Compteur.get compteur_branch)) in
                 movq (ind ~ofs:adr_expr_test rbp) (reg r8) ++
                 cmpq (imm hash) (ind r8)++
                 jne label_suite ++
@@ -309,7 +307,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
                                 cmpq (reg r8) (ind ~ofs:(8*id+8) r9) ++
                                 jne label_suite 
                         | A_pattern (pattern, adr) -> e := !e ++
-                                let label_match = "_match_" ^ (string_of_int (compteur_match ())) in
+                                let label_match = "_match_" ^ (string_of_int (Compteur.get compteur_match)) in
                                 movq (ind ~ofs:adr_expr_test rbp) (reg r9) ++
                                 movq2idx (8*id+8) r9 adr rbp ++
                                 traduit_a_pattern adr adr_result A_nop label_match pattern ++
@@ -330,7 +328,7 @@ and traduit_a_pattern adr_expr_test adr_result expr_if_ok label_fin = function
 
 and traduit_a_const = function
         | A_int (i,adr) -> movq (imm i) (ind ~ofs:adr rbp)
-        | A_string (s,adr) -> let label_name = "_str_const_"^(string_of_int (compteur_str_const ())) in
+        | A_string (s,adr) -> let label_name = "_str_const_"^(string_of_int (Compteur.get compteur_str_const)) in
                         add_data ((label label_name) ++ (string s)) ;
                         movq (ilab label_name) (ind ~ofs:adr rbp)
         | A_bool (false,adr) -> movq (imm 0) (ind ~ofs:adr rbp)

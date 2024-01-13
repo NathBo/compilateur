@@ -49,16 +49,7 @@ and a_pattern =
         | A_patarg of a_patarg
         | A_mulpatarg of int * a_patarg list
 
-let creer_8compteur () =
-        let i = ref (0) in
-        (fun () -> (incr i; -(!i*8)))
-
-let creer_8compteur_plus () =
-        let i = ref (1) in
-        (fun () -> (incr i; !i*8))
-
-
-
+(* utilitaires *)
 let expr_adr : a_expr -> int = function
         | A_atom (_,_,x) -> x
         | A_lident (_, _, _, x) -> x
@@ -95,7 +86,7 @@ let const_adr : a_constant -> int = function
         | A_string (_,x) -> x
 
 
-
+(* traduction de l'arbre de typage vers l'arbre d'allocation *)
 let rec typage_to_alloc t = 
         let class_dico = Purescript_data_info.build_class_dico t in
         Purescript_data_info.print_class_dico Format.std_formatter class_dico ;
@@ -108,7 +99,7 @@ and traduit_tvdecl class_dico = function
         | _ -> failwith "pas encore def 1"
 
 and traduit_tdefn dico x =
-        let arg_compteur = creer_8compteur_plus () in
+        let arg_compteur = Compteur.make 8 16 in
         let env = ref Smap.empty in
         
         let a_patargs = (List.map (fun patarg ->
@@ -117,93 +108,106 @@ and traduit_tdefn dico x =
                 r
         ) x.tpatargs) in
         
-        let cmpt = creer_8compteur () in
+        let cmpt = Compteur.make (-8) (-8) in
         let a_expr = traduit_texpr dico cmpt !env x.texpr in
-        let taille = abs (cmpt ()) in
+        let taille = abs (Compteur.size cmpt) in
         {a_ident = x.tident; a_patargs = a_patargs ; a_expr = a_expr ; tableau_activation = taille}
 
 and traduit_tpatarg dico compteur = function (* retourne une paire avec la traduction et le nouvel environnement *)
-        | TPconstant x -> A_constant (traduit_tconstant dico compteur x, compteur () ), Smap.empty
-        | TPlident x -> let addr = compteur() in (A_lident (x, addr ), Smap.singleton x addr)
-        | TPuident x -> A_uident ((Smap.find x dico).hash, compteur ()), Smap.empty
+        | TPconstant x -> A_constant (traduit_tconstant dico compteur x, Compteur.get compteur ), Smap.empty
+        | TPlident x -> let addr = Compteur.get compteur in (A_lident (x, addr ), Smap.singleton x addr)
+        | TPuident x -> A_uident ((Smap.find x dico).hash, Compteur.get compteur), Smap.empty
         | TPpattern pattern -> 
                         let a_pattern, env = traduit_tpattern dico compteur pattern in
-                        A_pattern (a_pattern, compteur ()) , env
+                        A_pattern (a_pattern, Compteur.get compteur) , env
 
 and traduit_texpr dico compteur env = function
         | TEatom (x,y) ->
                         let atm = traduit_atom dico compteur env x in
-                        A_atom (atm,y, compteur ())
+                        A_atom (atm,y, atom_adr atm)
         | TElident (x,y,z) -> 
                         let calculs_inter = List.map (traduit_atom dico compteur env) y in
-                        A_lident (x, calculs_inter, z, compteur () )
+                        A_lident (x, calculs_inter, z, Compteur.get compteur )
         | TEuident (uident,lst,typ) ->
                         let calculs_inter = List.map (traduit_atom dico compteur env) lst in
-                        A_uident (Smap.find uident dico , calculs_inter, typ, compteur() )
+                        A_uident (Smap.find uident dico , calculs_inter, typ, Compteur.get compteur )
         | TEdo (lst, typ) ->
-                        let lst_result = List.map (traduit_texpr dico compteur env) lst in
-                        A_do ( lst_result , typ, compteur () )
+                        let last_expr = ref A_nop in
+                        let lst_result = List.map (fun expr ->
+                                let cmpt_tmp = Compteur.copy compteur in
+                                let e = traduit_texpr dico cmpt_tmp env expr in
+                                last_expr := e ;
+                                e
+                        ) lst in
+                        Compteur.union compteur;
+                        A_do ( lst_result , typ, expr_adr !last_expr )
         | TEbinop (bi, e1, e2, typ) -> begin
                 let a_e1 = traduit_texpr dico compteur env e1 in
                 let a_e2 = traduit_texpr dico compteur env e2 in
                 match bi with
                 | Bdivide _ -> 
-                        A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
+                        A_lident ("_divide", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, Compteur.get compteur )
                 | Bcons _ -> 
-                        A_lident ("_concat", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, compteur () )
+                        A_lident ("_concat", [A_expr (a_e1, expr_typ a_e1, expr_adr a_e1) ; A_expr (a_e2, expr_typ a_e2, expr_adr a_e2)], typ, Compteur.get compteur)
  
-                | Bsup t -> A_binop (Binf t, a_e2, a_e1, typ, compteur ())
-                | Bsupeq t -> A_binop (Binfeq t, a_e2, a_e1, typ, compteur ())
+                | Bsup t -> A_binop (Binf t, a_e2, a_e1, typ, Compteur.get compteur)
+                | Bsupeq t -> A_binop (Binfeq t, a_e2, a_e1, typ, Compteur.get compteur)
                 | Bnotequals t -> 
-                                let equal = A_binop (Bequals t, a_e1, a_e2, typ, compteur()) in
-                                A_lident ("not", [A_expr (equal, expr_typ equal, expr_adr equal)], typ, compteur ())
-                | _ -> A_binop (bi, a_e1, a_e2, typ, compteur () ) 
+                                let equal = A_binop (Bequals t, a_e1, a_e2, typ, Compteur.get compteur) in
+                                A_lident ("not", [A_expr (equal, expr_typ equal, expr_adr equal)], typ, Compteur.get compteur)
+                | _ -> A_binop (bi, a_e1, a_e2, typ, Compteur.get compteur ) 
         end
         | TElet (lst, expr, typ) ->
                         (* calcul des positions sur la pile *)
                         Printf.printf "taille binding : %d\n" (List.length lst) ;
                         let env = List.fold_left (fun prev_env binding -> Smap.add binding.tident
-                                (compteur ())
+                                (Compteur.get compteur)
                         prev_env ) env lst in
 
                         (* calcul des valeurs *)
                         let a_binding = List.fold_left (fun l binding -> (
-                                let expr = traduit_texpr dico compteur env binding.tbindexpr in
+                                let compteur_tmp = Compteur.copy compteur in
+
+                                let expr = traduit_texpr dico compteur_tmp env binding.tbindexpr in
                                 let adr_result = Smap.find binding.tident env in
                                 {a_adr = adr_result ; a_expr = expr }
                         )::l) [] lst in
+                        Compteur.union compteur ;
 
                         
                         let a_expr = traduit_texpr dico compteur env expr in
-                        A_let (a_binding, a_expr, typ, compteur())
+                        A_let (a_binding, a_expr, typ, Compteur.get compteur)
         | TEif (e1, e2, e3, typ)        ->
                         let a_e1 = traduit_texpr dico compteur env e1 in
-                        let a_e2 = traduit_texpr dico compteur env e2 in
-                        let a_e3 = traduit_texpr dico compteur env e3 in
-                        A_if (a_e1, a_e2, a_e3, typ, compteur ())
+                        let c2 = Compteur.copy compteur in
+                        let c3 = Compteur.copy compteur in
+                        let a_e2 = traduit_texpr dico c2 env e2 in
+                        let a_e3 = traduit_texpr dico c3 env e3 in
+                        Compteur.union compteur ;
+                        A_if (a_e1, a_e2, a_e3, typ, expr_adr a_e1)
         | TEcase (expr, branchs , typ) ->
                 let e = traduit_texpr dico compteur env expr in
                 let b = List.map (traduit_tbranch dico compteur env) branchs in
-                A_case (e, b, typ, compteur () )
+                A_case (e, b, typ, Compteur.get compteur)
                 
 
 and traduit_tconstant dico compteur = function
-        | TCbool x -> A_bool (x, compteur ()) 
-        | TCstring x -> A_string (x, compteur ())
-        | TCint x -> A_int (x, compteur ())
+        | TCbool x -> A_bool (x, Compteur.get compteur) 
+        | TCstring x -> A_string (x, Compteur.get compteur)
+        | TCint x -> A_int (x, Compteur.get compteur)
 
 and traduit_atom dico compteur env = function
-        | TAconstant (x,y) -> A_constant (traduit_tconstant dico compteur x, y, compteur ())
+        | TAconstant (x,y) -> let cst = traduit_tconstant dico compteur x in A_constant (cst, y, const_adr cst)
         | TAexpr (x,y) -> let expr = traduit_texpr dico compteur env x in A_expr (expr, y, expr_adr expr)
         | TAlident (ident, typ) -> begin
                 match ident with
-                | "unit" -> A_constant ( A_bool (true, compteur ()), typ, compteur () )
+                | "unit" -> A_constant ( A_bool (true, Compteur.get compteur), typ, Compteur.get compteur)
                 | _ ->
                         let adr = Smap.find ident env in
                         A_lident (typ, adr)
         end
         | TAuident (ident, typ) ->
-                        let adr = compteur () in 
+                        let adr = Compteur.get compteur in 
                         let data_info = Smap.find ident dico in
                         if data_info.size <> 0 then failwith "il y a des parametres";
                         A_uident (data_info.hash , typ, adr)

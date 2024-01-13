@@ -1,4 +1,4 @@
-ppurs: src/purescript_main.ml src/purescript_ast.ml src/purescript_lexer.mll src/purescript_parser.mly src/purescript_typage.ml src/purescript_production_code.ml src/purescript_allocation.ml src/x86_64.ml src/x86_64.mli src/purescript_code_predefini.ml src/purescript_data_info.ml
+ppurs: src/purescript_main.ml src/purescript_ast.ml src/purescript_lexer.mll src/purescript_parser.mly src/purescript_typage.ml src/purescript_production_code.ml src/purescript_allocation.ml src/x86_64.ml src/x86_64.mli src/purescript_code_predefini.ml src/purescript_data_info.ml src/compteur.ml
 	@dune build
 	@mv src/purescript_main.exe ppurs
 
