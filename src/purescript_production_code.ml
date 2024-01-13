@@ -58,7 +58,6 @@ and traduit_a_expr = function
                 )) nop params ++
 
                 (* placer les params au bon endroit *)
-                (* si nb impair de params *)
                 (if ((List.length params) mod 2) = 1 then subq (imm 8) (reg rsp) else nop) ++ (* pushq *)
 
                 List.fold_left (fun acc atom -> (
@@ -169,6 +168,7 @@ and traduit_a_expr = function
                                 movq (ind ~ofs:e1_adr rbp) (reg r8) ++
                                 testq (reg r8) (reg r8) ++
                                 jne label_true ++
+                                traduit_a_expr e2 ++
                                 movq2idx e2_adr rbp addr rbp ++
                                 jmp label_fin ++
                                 label label_true ++

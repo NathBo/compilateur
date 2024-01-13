@@ -166,13 +166,10 @@ and traduit_texpr dico compteur env = function
 
                         (* calcul des valeurs *)
                         let a_binding = List.fold_left (fun l binding -> (
-                                let compteur_tmp = Compteur.copy compteur in
-
-                                let expr = traduit_texpr dico compteur_tmp env binding.tbindexpr in
+                                let expr = traduit_texpr dico compteur env binding.tbindexpr in
                                 let adr_result = Smap.find binding.tident env in
                                 {a_adr = adr_result ; a_expr = expr }
                         )::l) [] lst in
-                        Compteur.union compteur ;
 
                         
                         let a_expr = traduit_texpr dico compteur env expr in
