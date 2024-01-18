@@ -96,7 +96,8 @@ and traduit_tvdecl class_dico = function
         | TDdefn x -> Some (A_defn (traduit_tdefn class_dico x))
         | TDtdecl _ -> None
         | TDdata (_,_,_) -> None
-        | _ -> failwith "pas encore def 1"
+        | TDinstance _ -> None
+        | TDclass _ -> None
 
 and traduit_tdefn dico x =
         let arg_compteur = Compteur.make 8 16 in
