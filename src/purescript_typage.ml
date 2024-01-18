@@ -804,7 +804,17 @@ and checkforenddef (env:env) envtyps envinstances pos param =
   let blist = List.map (fun d -> {tpattern = TPpatarg( (List.nth d.tpatargs posdufiltrage)); texpr = d.texpr}) !tdeflist in
   let e = TEcase(TEatom(TAlident("$matching$",List.nth !tlist posdufiltrage),List.nth !tlist posdufiltrage),blist,!t) in
   let d = List.hd !tdeflist in
-  let rep = {tpatargs = replace_in_dfn 0 d.tpatargs posdufiltrage;tident = d.tident;texpr = e} in
+  let rec look_for_names patarglist old = match patarglist,old with
+    | p::q1,TPlident("_")::q2 -> p::look_for_names q1 q2
+    | p1::q1,p2::q2 -> p2::look_for_names q1 q2
+    | [],[] -> []
+    | _ -> failwith "pas possible"
+  in
+  let rec prendidents tdfl pl = match tdfl with
+    | tdf::q -> prendidents q (look_for_names tdf.tpatargs pl)
+    | [] -> pl
+  in
+  let rep = {tpatargs = replace_in_dfn 0 (prendidents (List.tl !tdeflist) d.tpatargs) posdufiltrage;tident = d.tident;texpr = e} in
   lastdefined := "";tdeflist := []; deflist := []; [TDdefn(rep)]
   end else (let first = List.hd !tdeflist in lastdefined := "";tdeflist := []; deflist := []; [TDdefn(first)]) end
 
