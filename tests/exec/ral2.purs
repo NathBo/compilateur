@@ -1,8 +1,8 @@
 module Main where
 
 import Prelude
-import Effect (Effect)
-import Effect.Console (log)
+import Effect
+import Effect.Console
 
 data Pair a b = P a b
 data List a = Nil | Zero (List (Pair a a)) | One a (List (Pair a a))
