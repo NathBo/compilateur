@@ -89,14 +89,12 @@ and tatom =
 and texpr =
   | TEatom of tatom*typ
   | TEbinop of binop * texpr * texpr*typ
-  | TElident of ident * tatom list * (tfunctiondinstance list) *typ
+  | TElident of ident * tatom list *typ
   | TEuident of ident * tatom list *typ
   | TEif of texpr * texpr * texpr*typ
   | TEdo of texpr list*typ
   | TElet of tbinding list * texpr*typ
   | TEcase of texpr * tbranch list*typ
-
-and tfunctiondinstance = {nomfonction : ident;funcparam : tfunctiondinstance list}
 
 and tbinding =
   {tident : ident; tbindexpr : texpr}
@@ -120,17 +118,12 @@ let rec print_tatom fmt a = match a with
 
 and print_texpr fmt e = match e with
 	| TEbinop (b,e1,e2,_) -> fprintf fmt "(%a %a %a)" print_texpr e1 print_binop b print_texpr e2
-	| TElident (s,a,il,_) -> fprintf fmt "%s [@[<hov>%a@]],[@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tatom) a Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tfunctiondinstance) il
-  | TEuident (s,a,_) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tatom) a
+	| TElident (s,a,_) | TEuident (s,a,_) -> fprintf fmt "%s [@[<hov>%a@]]" s Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tatom) a
 	| TEif (e1,e2,e3,_) -> fprintf fmt "if %a then %a else %a" print_texpr e1 print_texpr e2 print_texpr e3
 	| TEdo (e,_) -> fprintf fmt "do {@[<hov>%a@]}" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_texpr) e
 	| TElet (b,e,_) -> fprintf fmt "let {@[<hov>%a@]} in %a" Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ")	print_tbindings) b print_texpr e
 	| TEatom (a,_) -> print_tatom fmt a
 	| TEcase (e,b,_) -> fprintf fmt "case %a of {@[<hov>%a@]}" print_texpr e	Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@") print_tbranch) b
-
-and print_tfunctiondinstance fmt fd =
-  fprintf fmt "%s[@[<hov>%a@]]" fd.nomfonction Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ",@ ")	print_tfunctiondinstance) fd.funcparam
-
 
 and print_tbindings fmt (b:tbinding) =
 	fprintf fmt "%s = %a" b.tident print_texpr b.tbindexpr
@@ -533,7 +526,7 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
               else dejapris := Smap.add s t' !dejapris;aux q1 q2)
         | _ -> let b = fst (typatom env envtyps envinstances general a) in if not( unifyable [b] [t]) then typingerror ("mauvais argument dans l'appel de "^f^", on s'attendait à du "^string_of_typ t^" mais du "^string_of_typ b^" a été donné") pos else aux q1 q2)
       | _ -> typingerror ("la fonction "^f^" ne prend pas autant d'arguments") pos) in
-      aux tlist alist; let trep = substitute !dejapris pos t in (trep,TElident(name,List.map (fun a -> snd(typatom env envtyps envinstances general a)) alist,[],trep)))
+      aux tlist alist; let trep = substitute !dejapris pos t in (trep,TElident(name,List.map (fun a -> snd(typatom env envtyps envinstances general a)) alist,trep)))
   | Euident (s,alist,pos) -> let constr = smapfind s !envconstructors pos in
     let matchingtt =  (List.map (typatom env envtyps envinstances general) alist)  in
     let matchingfst = unification (List.map fst matchingtt) constr.ctlist pos in
@@ -544,7 +537,6 @@ and typexpr env envtyps (envinstances:(typ list * (ident * typ list) list) list 
 
 and find_compatible_instance pos envinstances cident f (general:bool) instances tlist =
   let l = List.length (smapfind cident envinstances pos) in
-  let ptil = List.length (smapfind cident !globalenvinstances pos) in
   let slist,classenvfonctions,flist = smapfind cident !envclasses pos in
   let ftlist = match smapfind f classenvfonctions pos with
     | Tarrow(tlist,t) -> tlist
@@ -576,8 +568,7 @@ and find_compatible_instance pos envinstances cident f (general:bool) instances 
   let a = cherchercompatible instances listdestvar (l-1) in
   if(a = -1)
     then typingerror ("Pas d'instance compatible pour la classe "^cident^" dans l'appel de "^f^" avec les types "^string_of_typlist tlist^" en arguments") pos
-  else if (a<ptil) then "."^cident^"."^f^"."^(string_of_int a)
-  else ".param."^(string_of_int (a-ptil))
+    else "."^cident^"."^f^"."^(string_of_int a)
 
 
 

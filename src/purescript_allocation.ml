@@ -125,7 +125,7 @@ and traduit_texpr dico compteur env = function
         | TEatom (x,y) ->
                         let atm = traduit_atom dico compteur env x in
                         A_atom (atm,y, atom_adr atm)
-        | TElident (x,y,_,z) -> 
+        | TElident (x,y,z) -> 
                         let calculs_inter = List.map (traduit_atom dico compteur env) y in
                         A_lident (x, calculs_inter, z, Compteur.get compteur )
         | TEuident (uident,lst,typ) ->
