@@ -12,7 +12,7 @@ let code_initial =
         leave ++
         ret ++
         
-        label "_show_int" ++
+        label ".Show.show.1" ++
         enter (imm 0) ++
         movq (imm 24) (reg rdi) ++
         call "malloc" ++
@@ -29,7 +29,7 @@ let code_initial =
         leave ++
         ret ++
 
-        label "_show_bool" ++
+        label ".Show.show.0" ++
         enter (imm 0) ++
         cmpq (imm 0) (ind ~ofs:16 rbp) ++
         je "_show_bool_false" ++

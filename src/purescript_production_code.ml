@@ -65,15 +65,7 @@ and traduit_a_expr = function
                 ) ++ acc) nop params ++
 
                 (* appel recursif *)
-                let fct_string = match fct with
-                        | "show" -> begin
-                                match atom_typ (List.hd params) with
-                                        | Int -> "_show_int"
-                                        | Boolean -> "_show_bool"
-                                        | _ -> "_show_undef"
-                                end
-                        | _ -> fct in
-                call fct_string ++ 
+                call fct ++ 
 
                 let pop_size = next_mult_16 (8*List.length params) in addq (imm pop_size) (reg rsp) ++
 
