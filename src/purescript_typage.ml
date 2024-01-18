@@ -904,9 +904,9 @@ and typinstance env envtyps envinstances i defpasreflist = match i with
     | TDdefn(tdf) -> TDdefn{tident = "."^clident^"."^tdf.tident^"."^(string_of_int l);texpr = tdf.texpr;tpatargs = tdf.tpatargs}
      | _ -> failwith "pas possible" in
     let rec aux8 defl tdefl = match defl,tdefl with
-      | [],[] -> checkforenddef env envtyps envinstances pos false
-      | def::q1,tdef::q2 -> let a = if !lastdefined <> "" && !lastdefined <> tdef.tident then checkforenddef env envtyps envinstances pos false else (lastdefined := tdef.tident;[]) in
-        deflist := def::(!deflist); tdeflist := tdef::(!tdeflist);a @ aux8 q1 q2
+      | [],[] -> print_endline !lastdefined;checkforenddef env envtyps envinstances pos false
+      | def::q1,tdef::q2 -> print_tdefn Format.std_formatter tdef;print_endline tdef.tident;print_endline (!lastdefined^" pris");let a = if !lastdefined <> "" && !lastdefined <> tdef.tident then (let i = checkforenddef env envtyps envinstances pos in (lastdefined := tdef.tident); i) false else (lastdefined := tdef.tident;[]) in
+        deflist := def::(!deflist); tdeflist := tdef::(!tdeflist);(lastdefined := tdef.tident);print_endline (!lastdefined^" ici");a @ aux8 q1 q2
       | _ -> failwith "pas possible" in
     let reponse = aux8 defpasreflist rep in deflist := [];tdeflist := [];
     List.map aux7 reponse)
