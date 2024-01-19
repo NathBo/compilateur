@@ -89,7 +89,7 @@ let const_adr : a_constant -> int = function
 (* traduction de l'arbre de typage vers l'arbre d'allocation *)
 let rec typage_to_alloc t = 
         let class_dico = Purescript_data_info.build_class_dico t in
-        Purescript_data_info.print_class_dico Format.std_formatter class_dico ;
+        (*Purescript_data_info.print_class_dico Format.std_formatter class_dico ;*)
         (List.filter_map (traduit_tvdecl class_dico) t) 
 
 and traduit_tvdecl class_dico = function
@@ -160,7 +160,6 @@ and traduit_texpr dico compteur env = function
         end
         | TElet (lst, expr, typ) ->
                         (* calcul des positions sur la pile *)
-                        Printf.printf "taille binding : %d\n" (List.length lst) ;
                         let env = List.fold_left (fun prev_env binding -> Smap.add binding.tident
                                 (Compteur.get compteur)
                         prev_env ) env lst in

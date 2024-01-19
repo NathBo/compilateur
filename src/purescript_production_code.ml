@@ -343,7 +343,7 @@ and traduit_a_atom = function
 
 let genere_code arbre_typage =
     let arbre_alloc = typage_to_alloc arbre_typage in
-    print_a_file Format.std_formatter arbre_alloc;
+    (*print_a_file Format.std_formatter arbre_alloc;*)
 
     let text = traduit_a_file arbre_alloc in
                    

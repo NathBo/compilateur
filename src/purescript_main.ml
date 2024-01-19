@@ -95,7 +95,7 @@ let () =
 		
 		let typ = Purescript_typage.typfile p in
 
-		Purescript_typage.print_tfile Format.std_formatter typ;
+		(*Purescript_typage.print_tfile Format.std_formatter typ;*)
 		
 		if !type_only then exit 0;
                 
