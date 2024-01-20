@@ -6,7 +6,7 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 
-\title{Compilateur purscript : rendu 1}
+\title{Compilateur purscript: compte rendu}
 
 \begin{document}
 
@@ -42,20 +42,37 @@ Le deuxième problème vient de deux dérivations possibles dans la grammaire. E
 \[ \left[ \begin{array}{l}
 	\text{type} \rightarrow \text{atype} \rightarrow \text{uident} \\
 	\text{type} \rightarrow \text{ntype} \rightarrow \text{uident}
-\end{array} \right.
+\end{array} \right].
 \]
 Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaitre l'un des deux (en l'occurence le premier).
 
 
 \part*{Le typage: point de vue général}
 
-Pour chaque type de l'ast, on crée une fonction qui renvoie son type (par exemple typexpr)
+Pour chaque type de l'ast, on crée une fonction qui renvoie son type (par exemple typexpr renvoie le type d'une expression)
 
 Pour vérifier qu'un fichier est bien typé, on appelle récursivement ces différentes fonctions en vérifiant systématiquement
 que les types sont bien cohérents (càd par exemple qu'on n'additionne pas 2 String)
 
-De plus, pour les patternes, on crée la focntion ensuretyppatern qui prend en argument un patterne et un type, vérifie
-que le patterne est bien cohérent avec le type et renvoie un environnement où on a ajouté les nouveaux ident apparus dans le patterne
+
+\part*{Le typage: les différents types}
+
+Un type peut être:
+
+\begin{itemize}
+	\item Un des 4 types de base (Int,Boolean,String,Unit)
+	\item Un type polymorphe (Tgeneral a)
+	\item Un type créé par l'utilisateur et d'arité $\geq 0$ (Tcustom("Pair",[Int,String]))
+	\item Tany = un type qui peut être n'importe quoi, par exemple Nil dans pascal.purs est un Tcustom("List",[Tany])
+\end{itemize}
+
+
+\part*{Le typage: les patternes}
+
+Pour les patternes, on crée la focntion ensuretyppatern qui prend en argument un patterne, un environnement et un type, vérifie
+que le patterne est bien cohérent avec le type et renvoie l'environnement initial où on a ajouté les nouveaux ident apparus dans le patterne
+
+De plus, la fonction checkexhaustivlist prend en argument une liste de liste de patternes et vérifie récursivement que cette liste est bien exhaustive.
 
 
 \part*{Le typage: les environnements}
@@ -77,6 +94,11 @@ première qui est cohérente avec les types des différents arguments de f
 
 Si on n'en trouve aucune, alors on retourne une erreur.
 
+Quand on définit une nouvelle instance, on l'ajoute à un environnement d'instance global.
+
+De plus, pour les instances qui demande des instances en paramètre (càd des instances définies récursivement),
+on rajoute dans l'environnement d'instances local (initialisé à l'environnement d'instance global) les instances passées en paramètre
+
 
 
 \part*{Le typage: gestion des erreurs}
@@ -86,12 +108,26 @@ L'ast est légèrement modifiée par rapport à la grammaire fournie de manière
 Quand une erreur est détectée, on retourne cette position et on affiche le bout du fichier qui y correspond
 
 
+\part*{L'arbre de typage}
+
+Le typage va renvoyer un arbre très proche de celui renvoyé par l'analyse syntaxique, mais avec quelques différences:
+
+\begin{itemize}
+	\item Les expressions et atomes ont leur type indiqué
+	\item Les fonctions avec plusieurs définitions n'en ont maintenant plus qu'une, on a juste rajouté un case au début
+	\item Les instances ne sont plus renvoyées comme telles, à la place chaque fonction de chaque instance est considérée comme sa propre fonction, et quand on appelle une instance, on appelle la seule fonction de la classe qui convient
+\end{itemize}
+
+
 \part*{Le typage: ce qui n'a pas été codé}
 
-Les types d'arité >0 ne marchent pas très bien, en particulier les fichiers queens2.purs, pascal.purs et ral.purs ne typent pas
+Nous avons admis une limitation ambigüe de Petit Purescript (mais qui ne contredit aucun des tests fournis): nous considèrons évidemment que chaque fonction ne peut avoir du filtrage
+que sur un des paramètres, les autres devant être des ident. Mais en plus nous supposons que les noms d'un paramètre sont les mêmes pour toutes les déclarations de la fonction
+(cependant, il peut y avoir un \_ et un ident sur le même paramètre, comme dans queens.purs par exemple)
 
-Normalement, tout le reste fonctionne.
-
+De plus, les instances récursives ne compilent pas très bien. En effet, nous avons choisi de considérer chaque instance comme sa propre fonction.
+Cependant, il est à noter que tous les tests qui utilisent les instances récursives fonctionnent, sauf ral.purs, mais pour une raison peu satisfaisante
+qui provient de la simplicité des tests (l'instance utilisée en paramètre est définie juste après).
 
 
 \part*{Makefile / dune / tests}
