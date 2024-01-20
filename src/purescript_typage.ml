@@ -14,6 +14,7 @@ type typ =
 and tvar = {id : int; mutable def : typ option}
 
 
+
 let rec string_of_typlist tl = match tl with
   | t::q -> string_of_typ t^" "^string_of_typlist q
   | [] -> ""
@@ -30,6 +31,8 @@ and string_of_typ t = match t with
   | Tany -> "any"
 
 
+
+(*l'ast de l'arbre renvoyé par le typage*)  
 type tfile =
   {timports : timports; tvdecls : tvdecl list}
 
@@ -105,6 +108,8 @@ and tbranch =
 
 open Format
 
+
+(*le pretty printer de l'arbre de typage*)
 let print_tconstant fmt c = match c with
 	| TCbool (b) -> fprintf fmt "boolean %s" (string_of_bool b)
 	| TCint (n) -> fprintf fmt "int %d" n
@@ -182,32 +187,16 @@ and print_tfile fmt f =
 
 
 
-
-
-type typfunctions =
-  {flidents : ident list; instancelist : typinstance list; typlist : typ list;typ : typ; matching : (motif list * expr)list}
-
-and typinstance =
-  {typinstancelist : typinstance list; typlist : typ list; matching : (ident * motif list * expr) list}
-
-and motif =
-  | Mconst of constant
-  | Mident of string
-
-and typclass =
-  {variablesdetypes : string list; fonctionsdeclasse : (string * typ list)list}
-
-
-
 module Smap = Map.Make(String)
 
 
+(*le message d'erreur du typage*)
 exception TypingError of string * position
 
 let typingerror s pos = raise (TypingError (s,pos))
 
 
-
+(*on utilise cette fonction au lieu de Smap.find pour pouvoir renvoyer une erreur custom avec la position et pas juste NotFound*)
 let smapfind s smap pos =
   if Smap.mem s smap
   then Smap.find s smap
@@ -225,6 +214,7 @@ let string_to_list s = List.init (String.length s) (String.get s)
 let isalident s = List.mem s.[0] (string_to_list "azertyuiopqsdfghjklmwxcvbn")
 
 
+(*l'environnement global des instances, avec en premier les types qui remplacent les types polymorphes et en second les instances dont cette instance a besoin*)
 let (globalenvinstances : (typ list*(ident*(typ list))list ) list Smap.t ref) = ref (Smap.add "Show" ([([Int],[]);([Boolean],[])]) Smap.empty)
 
 
@@ -620,6 +610,8 @@ and ensuretyppatarg env envtyps envinstances t p = match p with
     | t1,t2 -> if not(compatible [t1] [t2]) then (typingerror ("On s'attendait à du "^string_of_typ t1^" mais "^s^" est un constructeur du type "^string_of_typ t2) pos )else env,TPuident(s))
   | Ppattern (p,pos) -> let env,p' = ensuretyppattern env envtyps envinstances t p in env,TPpattern(p')
 
+
+(*cette fonction a l'air ridicule mais il fut un temps où elle était plus compliqué*)
 and get_typ_constr_multi env envtyps envinstances (constr:constructor) plist tacomp s pos =
   let t = constr.ctyp in
   t
@@ -765,6 +757,7 @@ else
   aux2 ialist;List.map (fun (s,l) -> s,List.map (fun a -> snd(typatype env envtypsact envinstances a)) l) ialist
   
 
+(*appelé quand on a fini d'énumérer toutes les définitions d'une fonction, vérifie l'exhaustivité et construit la nouvelle fonction qui n'a qu'une définition*)
 and checkforenddef (env:env) envtyps envinstances pos param = 
   let rec isanident p = match p with
     | Plident (s,pos) -> true
@@ -833,6 +826,7 @@ and replace_in_dfn i ptlist posdufiltrage = match ptlist with
 
 
 
+(*juste des fonctions pour dire que l'union de 2 Smap non disjointes est sans conséquence*)
 and noconseqconflit _ a _ = Some a
 
 and noconseqconflit2 _ a _ = Some a
