@@ -24,7 +24,7 @@ let build_class_dico prog =
         !dico
 
 let print_class_dico fmt dico = begin
-        fprintf fmt "Class dico :\n" ;
+        fprintf fmt "types algébriques :\n" ;
         Smap.iter (fun nom info ->
                 fprintf fmt "   %s devient : %d, taille : %d\n" nom info.hash info.size
         ) dico

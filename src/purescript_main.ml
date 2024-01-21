@@ -5,6 +5,7 @@ open Purescript_ast
 (* Option de compilation *)
 let parse_only = ref false
 let type_only = ref false
+let show_algebraic = ref false
 
 (* Nom du fichier source *)
 let ifile = ref ""
@@ -17,7 +18,11 @@ let options =
 	 "Pour ne faire que l'analyse syntaxique";
 
 	 "--type-only", Arg.Set type_only,
-	  "Pour ne faire que l'analyse syntaxique puis le typage"]
+      "Pour ne faire que l'analyse syntaxique puis le typage";
+     
+     "--show-algebraic", Arg.Set show_algebraic,
+     "Pour afficher la représentation mémoire des types algébriques"
+    ]
 
 let usage = "compilateur de purscript\nutilisation : ./ppurs myfile.purs"
 (* définition des couleurs pour l'affichage *)
@@ -99,10 +104,10 @@ let () =
 		
 		if !type_only then exit 0;
                 
-                let programe = Purescript_production_code.genere_code typ.tvdecls in
-                let fout = open_out (str_replace ".purs" ".s" !ifile) in
-                X86_64.print_program (Format.formatter_of_out_channel fout) programe;
-                close_out fout;
+        let programe = Purescript_production_code.genere_code typ.tvdecls !show_algebraic in
+        let fout = open_out (str_replace ".purs" ".s" !ifile) in
+        X86_64.print_program (Format.formatter_of_out_channel fout) programe;
+        close_out fout;
 
 		exit 0
 
@@ -115,7 +120,7 @@ let () =
 			localisation (calcPosition buf);
 			eprintf "%s\n" (colorRed ^ "Erreur syntaxique" ^ colorDefault);
 			exit 1
-		| Purescript_typage.TypingError (s,pos) -> (* TODO afficher e *)
+		| Purescript_typage.TypingError (s,pos) ->
 			localisation pos;
 			eprintf "%s\n" (colorRed ^ "Erreur typage ligne "^(string_of_int pos.startpos.pos_lnum) ^ " colonne "^(string_of_int (pos.startpos.pos_cnum-pos.startpos.pos_bol)) ^" : "^s ^ colorDefault);
 			exit 1

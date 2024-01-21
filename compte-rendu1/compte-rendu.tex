@@ -5,6 +5,8 @@
 \usepackage[T1]{fontenc}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\AtBeginDocument{\def\labelitemi{$\bullet$}}
+
 
 \title{Compilateur purscript: compte rendu}
 
@@ -46,48 +48,49 @@ Le deuxième problème vient de deux dérivations possibles dans la grammaire. E
 \]
 Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaitre l'un des deux (en l'occurence le premier).
 
-
-\part*{Le typage: point de vue général}
+\newpage
+\part*{Le typage}
+\section*{Le typage: point de vue général}
 
 Pour chaque type de l'ast, on crée une fonction qui renvoie son type (par exemple typexpr renvoie le type d'une expression)
 
 Pour vérifier qu'un fichier est bien typé, on appelle récursivement ces différentes fonctions en vérifiant systématiquement
-que les types sont bien cohérents (càd par exemple qu'on n'additionne pas 2 String)
+que les types sont bien cohérents (càd par exemple qu'on n'additionne pas 2 Strings)
 
 
-\part*{Le typage: les différents types}
+\section*{Le typage: les différents types}
 
-Un type peut être:
+\noindent Un type peut être:
 
 \begin{itemize}
 	\item Un des 4 types de base (Int,Boolean,String,Unit)
 	\item Un type polymorphe (Tgeneral a)
-	\item Un type créé par l'utilisateur et d'arité $\geq 0$ (Tcustom("Pair",[Int,String]))
-	\item Tany = un type qui peut être n'importe quoi, par exemple Nil dans pascal.purs est un Tcustom("List",[Tany])
+	\item Un type créé par l'utilisateur et d'arité positive (Tcustom("Pair",[Int,String]))
+	\item Tany : un type qui peut être n'importe quoi, par exemple Nil dans pascal.purs est un Tcustom("List",[Tany])
 \end{itemize}
 
 
-\part*{Le typage: les patternes}
+\section*{Le typage: les patterns}
 
-Pour les patternes, on crée la focntion ensuretyppatern qui prend en argument un patterne, un environnement et un type, vérifie
-que le patterne est bien cohérent avec le type et renvoie l'environnement initial où on a ajouté les nouveaux ident apparus dans le patterne
+Pour les patterns, on crée la fonction ensuretyppatern qui prend en argument un pattern, un environnement et un type, vérifie
+que le pattern est bien cohérent avec le type et renvoie l'environnement initial auquel on a ajouté les nouveaux ident apparus dans le pattern.
 
-De plus, la fonction checkexhaustivlist prend en argument une liste de liste de patternes et vérifie récursivement que cette liste est bien exhaustive.
+De plus, la fonction checkexhaustivlist prend en argument une liste de liste de patterns et vérifie récursivement que cette liste est bien exhaustive.
 
 
-\part*{Le typage: les environnements}
+\section*{Le typage: les environnements}
 
-On va stocker le type de tous les ident dans des environnements locaux passées en paramètre à à peu près toutes les fonctions
+On va stocker le type de tous les ident dans des environnements locaux passées en paramètre à presque toutes les fonctions.
 
 Il y a un environnement global pour les types (nommé envtyps) où sont stockés les types déclarés par data, auquel s'ajoute un environnement
-local qui contient les variables de type et passé en paramètre
+local qui contient les variables de type et passé en paramètre.
 
-Les fonctions et les classes sont quant à elles sont stockées dans un environnement global (nommé respectivement globalenvfonctions et envclasses)
+Les fonctions et les classes sont quant à elles stockées dans un environnement global (nommé respectivement globalenvfonctions et envclasses)
 
 De même que pour les types, Il y a un environnement global pour les instances (nommé globalenvinstances) où sont stockés les instances déclarées par Instance, auquel s'ajoute un environnement
 local qui contient les instances passées en paramètre aux fonctions et passé en paramètre (nommé envinstances)
 
-\part*{Le typage: gestion des instances}
+\section*{Le typage: gestion des instances}
 
 Quand une fonction f liée à une classe C est utilisée, on regarde une à une toutes les instances liées à C et on prend la
 première qui est cohérente avec les types des différents arguments de f
@@ -101,41 +104,65 @@ on rajoute dans l'environnement d'instances local (initialisé à l'environnemen
 
 
 
-\part*{Le typage: gestion des erreurs}
+\section*{Le typage: gestion des erreurs}
 
 L'ast est légèrement modifiée par rapport à la grammaire fournie de manière à associer à chaque type de l'ast une position dans le fichier
 
 Quand une erreur est détectée, on retourne cette position et on affiche le bout du fichier qui y correspond
 
 
-\part*{L'arbre de typage}
+\section*{L'arbre de typage}
 
 Le typage va renvoyer un arbre très proche de celui renvoyé par l'analyse syntaxique, mais avec quelques différences:
 
 \begin{itemize}
 	\item Les expressions et atomes ont leur type indiqué
-	\item Les fonctions avec plusieurs définitions n'en ont maintenant plus qu'une, on a juste rajouté un case au début
+	\item Les fonctions avec plusieurs définitions n'en ont maintenant plus qu'une, on a juste rajouté un "case" au début
 	\item Les instances ne sont plus renvoyées comme telles, à la place chaque fonction de chaque instance est considérée comme sa propre fonction, et quand on appelle une instance, on appelle la seule fonction de la classe qui convient
 \end{itemize}
 
 
-\part*{Le typage: ce qui n'a pas été codé}
+\section*{Le typage: ce qui n'a pas été codé}
 
 Nous avons admis une limitation ambigüe de Petit Purescript (mais qui ne contredit aucun des tests fournis): nous considèrons évidemment que chaque fonction ne peut avoir du filtrage
 que sur un des paramètres, les autres devant être des ident. Mais en plus nous supposons que les noms d'un paramètre sont les mêmes pour toutes les déclarations de la fonction
-(cependant, il peut y avoir un \_ et un ident sur le même paramètre, comme dans queens.purs par exemple)
+(cependant, il peut y avoir un "\_" et un ident sur le même paramètre, comme dans queens.purs par exemple)
 
 De plus, les instances récursives ne compilent pas très bien. En effet, nous avons choisi de considérer chaque instance comme sa propre fonction.
 Cependant, il est à noter que tous les tests qui utilisent les instances récursives fonctionnent, sauf ral.purs, mais pour une raison peu satisfaisante
 qui provient de la simplicité des tests (l'instance utilisée en paramètre est définie juste après).
 
+\newpage
+\part*{La production de code}
 
-\part*{Makefile / dune / tests}
+\section*{La gestion des types algébriques}
+La toute première passe transforme les types algébriques en blocs $(C(T),\text{taille}(T))$. Le résultat peut être visualisé grâce à l'option "--show-algebraic"
+
+
+\section*{L'allocation}
+Pour produire l'assembleur, une passe d'allocation est nécessaire. Elle consiste à attribuer à chaque expressions et constante une place sur la pile. Il a d'ailleurs été décidé que tout calcul intermédiaire irait sur la pile.
+
+La gestion de la pile est légèrement optimisée (par exemple dans un bloc "do" il est possible de réutiliser certaines adresse quand on passe d'une instruction à la suivante, de même pour un "if then else", etc)
+
+
+\section*{La production de X86-64}
+\noindent Puis chaque bloc est traduit individellement. Il faut cependant noter que :
+\begin{itemize}
+    \item certaines fonctions sont pré-définies (voir le fichier src/purescript\_code\_predefini.ml). Il s'agit de "log", "show", "divide", "mod", "not", "concat" et "pure".
+    \item certaines opérations ne sont plus possible au moment de produire de l'assembleur (par exemple les inégalités sont toujous dans le sens $<$ ou $\le$, la division est un appel de fonction, \dots).
+    \item À nouveau, tout calcul intermédiaire stoque le résultat sur la pile. Une fonction pour deplacer une valeur sur la pile a été ajoutée dans X86\_64.ml, qui en plus vérifie que la destination est différente du départ (car certaines optimisations de l'allocation permettent d'éviter ces copies inutiles).
+    \item Toutes les fonctions purescript sont traduites comme des fonctions x86-64.
+\end{itemize}
+
+
+\newpage
+\part*{L'environnement de développement}
 Le projet contient également des scripts permettant d'automatiser la compilation et de tester rapidement sur de nombreux tests.
 
 La plupart des tests sont fourni mais nous avons rajouté quelques tests afin de vérifier le comportement sur quelques cas particuliers.
 
-Dune s'occupe de produire le fichier purscript\_main.exe. Et Make s'occupe de lancer dune, de renommer l'exécutable, et de lancer les tests.
+Le projet est rendu avec un fichier make et un fichier dune afin de faciliter la compilation.
+
 
 \end{document}
 

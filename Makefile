@@ -11,10 +11,9 @@ tests2: ppurs
 	@./run-tests.sh -2 ./ppurs
 tests3: ppurs
 	@./run-tests.sh -3 ./ppurs
-
-
 testsAll: ppurs
 	@./run-tests.sh -all ./ppurs
+
 run: ppurs
 	./ppurs test.purs 
 	@echo ""

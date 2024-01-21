@@ -87,9 +87,9 @@ let const_adr : a_constant -> int = function
 
 
 (* traduction de l'arbre de typage vers l'arbre d'allocation *)
-let rec typage_to_alloc t = 
+let rec typage_to_alloc t show_algebraic = 
         let class_dico = Purescript_data_info.build_class_dico t in
-        (*Purescript_data_info.print_class_dico Format.std_formatter class_dico ;*)
+        if show_algebraic then Purescript_data_info.print_class_dico Format.std_formatter class_dico ;
         (List.filter_map (traduit_tvdecl class_dico) t) 
 
 and traduit_tvdecl class_dico = function

@@ -18,3 +18,4 @@ l'exécutable `ppurs` accepte plusieurs option :
 - `--help` affiche l'aide
 - `--parse_only` ne fait que l'analyse syntaxique
 - `--type_only` s'arrrête apres le typage
+- `--show-algebraic` affiche la représentation mémoire des types algébriques

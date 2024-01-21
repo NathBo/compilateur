@@ -106,20 +106,6 @@ let code_initial =
         leave ++
         ret ++
 
-
-        (*label "not" ++
-        enter (imm 0) ++
-        movq (ind ~ofs:16 rbp) (reg rax) ++
-        testq (reg rax) (reg rax) ++
-        jz "_not_false" ++
-        movq (imm 0) (reg rax) ++
-        leave ++
-        ret ++
-        label "_not_false" ++
-        movq (imm 1) (reg rax) ++
-        leave ++
-        ret *)
-
         label "not" ++
         enter (imm 0) ++
         movq (ind ~ofs:16 rbp) (reg rax) ++
