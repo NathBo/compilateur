@@ -40,13 +40,13 @@ En effet, cela provoque un conflit car le parser ne sait pas quand passer d'une 
 
 La solution est donc de remplacer par 3 règles qui s'appellent en chaîne et qui permettent de placer nous-même les limites.
 \\
-Le deuxième problème vient de deux dérivations possibles dans la grammaire. En effet, si l'on souhaite reconnaitre on objet de 'type' et que l'on lit un 'uident', alors les deux dérivations suivantes sont possibles:
+Le deuxième problème vient de deux dérivations possibles dans la grammaire. En effet, si l'on souhaite reconnaître on objet de 'type' et que l'on lit un 'uident', alors les deux dérivations suivantes sont possibles:
 \[ \left[ \begin{array}{l}
 	\text{type} \rightarrow \text{atype} \rightarrow \text{uident} \\
 	\text{type} \rightarrow \text{ntype} \rightarrow \text{uident}
 \end{array} \right].
 \]
-Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaitre l'un des deux (en l'occurence le premier).
+Mais pour la suite, ces deux dérivations sont équivalentes, donc nous avons forcé le parser à reconnaître l'un des deux (en l'occurrence le premier).
 
 \newpage
 \part*{Le typage}
@@ -124,7 +124,7 @@ Le typage va renvoyer un arbre très proche de celui renvoyé par l'analyse synt
 
 \section*{Le typage: ce qui n'a pas été codé}
 
-Nous avons admis une limitation ambigüe de Petit Purescript (mais qui ne contredit aucun des tests fournis): nous considèrons évidemment que chaque fonction ne peut avoir du filtrage
+Nous avons admis une limitation ambigüe de Petit Purescript (mais qui ne contredit aucun des tests fournis): nous considérons évidemment que chaque fonction ne peut avoir du filtrage
 que sur un des paramètres, les autres devant être des ident. Mais en plus nous supposons que les noms d'un paramètre sont les mêmes pour toutes les déclarations de la fonction
 (cependant, il peut y avoir un "\_" et un ident sur le même paramètre, comme dans queens.purs par exemple)
 
@@ -146,10 +146,10 @@ La gestion de la pile est légèrement optimisée (par exemple dans un bloc "do"
 
 
 \section*{La production de X86-64}
-\noindent Puis chaque bloc est traduit individellement. Il faut cependant noter que :
+\noindent Puis chaque bloc est traduit individuellement. Il faut cependant noter que :
 \begin{itemize}
     \item certaines fonctions sont pré-définies (voir le fichier src/purescript\_code\_predefini.ml). Il s'agit de "log", "show", "divide", "mod", "not", "concat" et "pure".
-    \item certaines opérations ne sont plus possible au moment de produire de l'assembleur (par exemple les inégalités sont toujous dans le sens $<$ ou $\le$, la division est un appel de fonction, \dots).
+    \item certaines opérations ne sont plus possible au moment de produire de l'assembleur (par exemple les inégalités sont toujours dans le sens $<$ ou $\le$, la division est un appel de fonction, \dots).
     \item À nouveau, tout calcul intermédiaire stoque le résultat sur la pile. Une fonction pour deplacer une valeur sur la pile a été ajoutée dans X86\_64.ml, qui en plus vérifie que la destination est différente du départ (car certaines optimisations de l'allocation permettent d'éviter ces copies inutiles).
     \item Toutes les fonctions purescript sont traduites comme des fonctions x86-64.
 \end{itemize}
